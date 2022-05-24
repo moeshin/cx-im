@@ -139,7 +139,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 		return err
 	}
 	chatId := AnyToString(data["chatid"])
-	courseName := AnyToString(data["course"].(map[string]interface{})["data"].([]interface{})[0].(map[string]interface{})["name"])
+	courseName := AnyToString(AnyToJObject(AnyToJArray(AnyToJObject(data["course"])["data"]).Get(0))["name"])
 	className := AnyToString(data["name"])
 	log.Printf("发现课程：《%s》『%s』(%s, %s) %s\n", courseName, className, courseId, classId, chatId)
 

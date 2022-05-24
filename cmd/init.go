@@ -5,7 +5,6 @@ import (
 	"cx-im/core"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 )
 
@@ -39,7 +38,6 @@ var initCmd = &cobra.Command{
 		data.Set(config.Fid, fid)
 
 		courses := config.GocObj(data, config.Courses)
-		log.Println(courses)
 		errs.Panic(client.GetCourses(courses))
 		errs.Panic(userConfig.Save())
 
