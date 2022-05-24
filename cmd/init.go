@@ -3,9 +3,9 @@ package cmd
 import (
 	"cx-im/config"
 	"cx-im/core"
-	"github.com/iancoleman/orderedmap"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
 )
 
@@ -38,13 +38,8 @@ var initCmd = &cobra.Command{
 		data.Set(config.Password, password)
 		data.Set(config.Fid, fid)
 
-		courses := orderedmap.New()
-		v, ok := data.Get(config.Courses)
-		if ok {
-			courses, _ = v.(*config.Object)
-		} else {
-			data.Set(config.Courses, courses)
-		}
+		courses := config.GocObj(data, config.Courses)
+		log.Println(courses)
 		errs.Panic(client.GetCourses(courses))
 		errs.Panic(userConfig.Save())
 

@@ -4,7 +4,6 @@ import (
 	"cx-im/config"
 	"encoding/json"
 	"errors"
-	"github.com/iancoleman/orderedmap"
 	"github.com/moeshin/go-errs"
 	"io/ioutil"
 	"log"
@@ -144,13 +143,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	className := AnyToString(data["name"])
 	log.Printf("发现课程：《%s》『%s』(%s, %s) %s\n", courseName, className, courseId, classId, chatId)
 
-	course := orderedmap.New()
-	v, ok := courses.Get(chatId)
-	if ok {
-		course, _ = v.(*config.Object)
-	} else {
-		courses.Set(chatId, course)
-	}
+	course := config.GocObj(courses, chatId)
 	course.Set(config.ChatId, chatId)
 	course.Set(config.CourseId, courseId)
 	course.Set(config.ClassId, classId)

@@ -137,3 +137,15 @@ func init() {
 	set(SignLocation, true)
 	set(SignCode, true)
 }
+
+func GocObj(data *Object, key string) *Object {
+	r := orderedmap.New()
+	v, ok := data.Get(key)
+	if ok {
+		vv, _ := v.(Object)
+		r = &vv
+	} else {
+		data.Set(key, r)
+	}
+	return r
+}
