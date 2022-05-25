@@ -26,8 +26,7 @@ var initCmd = &cobra.Command{
 		}
 
 		appConfig := config.GetAppConfig()
-		userConfig, err := appConfig.GetUserConfig(username)
-		errs.Panic(err)
+		userConfig := appConfig.GetUserConfig(username)
 		client, err := core.NewClient(username, password, fid)
 		errs.Panic(err)
 		errs.Panic(client.Login())

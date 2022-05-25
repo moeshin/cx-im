@@ -24,13 +24,15 @@ type CxClient struct {
 }
 
 var (
-	RegexpCourses,
+	regexpCourses,
+	regexpImToken,
 	_ *regexp.Regexp
 )
 
 func init() {
 	var err error
-	RegexpCourses, err = regexp.Compile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
+	regexpCourses, err = regexp.Compile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
+	regexpImToken, err = regexp.Compile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
 	errs.Panic(err)
 }
 
@@ -49,6 +51,29 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 			Jar: jar,
 		},
 	}, nil
+}
+
+func NewClientFromConfig(cfg *config.Config) (*CxClient, error) {
+	var username, password, fid string
+	v, ok := cfg.Data.Get(config.Username)
+	if ok {
+		username, ok = v.(string)
+	}
+	if username == "" {
+		return nil, errors.New("账号不存在")
+	}
+	v, ok = cfg.Data.Get(config.Password)
+	if ok {
+		password, ok = v.(string)
+	}
+	if password == "" {
+		return nil, errors.New("密码不存在")
+	}
+	v, _ = cfg.Data.Get(config.Fid)
+	if ok {
+		fid, ok = v.(string)
+	}
+	return NewClient(username, password, fid)
 }
 
 func (c *CxClient) Login() error {
@@ -110,7 +135,7 @@ func (c *CxClient) GetCourses(courses *config.Object) error {
 	if err != nil {
 		return err
 	}
-	matches := RegexpCourses.FindAllStringSubmatch(string(data), -1)
+	matches := regexpCourses.FindAllStringSubmatch(string(data), -1)
 	for _, match := range matches {
 		courseId := match[1]
 		classId := match[2]
@@ -150,6 +175,27 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	course.Set(config.CourseName, courseName)
 	course.Set(config.ClassName, className)
 	return nil
+}
+
+func (c *CxClient) GetImToken() (string, string, error) {
+	resp, err := c.Client.Get("https://im.chaoxing.com/webim/me")
+	if err != nil {
+		return "", "", err
+	}
+	defer errs.CloseResponse(resp)
+	err = testCxClientStatus(resp)
+	if err != nil {
+		return "", "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+	match := regexpImToken.FindStringSubmatch(string(data))
+	if match == nil {
+		return "", "", errors.New("没有匹配 regexpImToken")
+	}
+	return match[1], match[2], nil
 }
 
 func testCxClientStatus(resp *http.Response) error {

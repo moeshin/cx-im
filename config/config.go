@@ -134,13 +134,13 @@ func GetAppConfig() *Config {
 	return AppConfig
 }
 
-func (c *Config) GetUserConfig(user string) (*Config, error) {
+func (c *Config) GetUserConfig(user string) *Config {
 	v, ok := UsersConfig[user]
 	if !ok {
 		v = Load(GetUserConfigPath(user), c)
 		UsersConfig[user] = v
 	}
-	return v, nil
+	return v
 }
 
 func init() {
