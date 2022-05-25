@@ -135,5 +135,54 @@ func (w *Work) OnMessage(msg []byte) {
 	}
 	log.Println("chatId:", chatId)
 
+	sessionEnd := 11
+	buf := im.NewBuf(msg)
+	for {
+		end := sessionEnd
+		buf.Pos = sessionEnd
+		errs.Print(w.onSession(buf, &sessionEnd, chatId))
+		if sessionEnd == end {
+			break
+		}
+	}
+}
+
+func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
+	b, err := buf.Read()
+	if err != nil {
+		return err
+	}
+	if b != 0x22 {
+		return nil
+	}
+	i, err := buf.ReadEnd2()
+	if err != nil {
+		return err
+	}
+	*sessionEnd = i
+	exit := false
+	if i == 0 {
+		exit = true
+	} else {
+		i, err := buf.Read()
+		if err != nil {
+			return err
+		}
+		if i != 0x08 {
+			exit = true
+		}
+	}
+	if exit {
+		log.Println("IM 解析 Session 失败")
+		return nil
+	}
+	log.Println("IM 释放 Session")
+	end := buf.Pos + 9
+	errs.Print(w.Send(im.BuildReleaseSessionMsg(
+		chatId,
+		buf.Buf[buf.Pos:end],
+	)))
+
 	// TODO
+	return nil
 }

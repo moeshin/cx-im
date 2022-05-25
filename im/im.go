@@ -108,6 +108,19 @@ func BuildLoginMsg(uid string, token string) []byte {
 	return BuildMsg(d)
 }
 
+func BuildReleaseSessionMsg(chatId string, session []byte) []byte {
+	size := byte(len(chatId))
+	var d []byte
+	d = append(d, MsgHeaderActive...)
+	d = append(d, 0x26+size, 0x10)
+	d = append(d, session...)
+	d = append(d, 0x1a, 0x29, 0x12, size)
+	d = append(d, []byte(chatId)...)
+	d = append(d, MsgFooter...)
+	d = append(d, 0x58, 0x00)
+	return BuildMsg(d)
+}
+
 func GetChatId(data []byte) string {
 	index := lastIndexSlice(data, MsgFooter)
 	if index != -1 {
