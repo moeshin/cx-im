@@ -24,9 +24,10 @@ type Config struct {
 	Data   *Object
 	Parent *Config
 	User   *User
+	New    bool
 }
 
-func Load(path string, parent *Config) (*Config, bool) {
+func Load(path string, parent *Config) *Config {
 	var v *Object
 	file, err := os.Open(path)
 	if err == nil {
@@ -36,9 +37,12 @@ func Load(path string, parent *Config) (*Config, bool) {
 		if err == nil {
 			err = json.Unmarshal(data, &v)
 		}
+	}
+	if !os.IsNotExist(err) {
 		errs.Print(err)
 	}
-	if v == nil {
+	New := v == nil
+	if New {
 		v = orderedmap.New()
 	}
 	return &Config{
@@ -46,7 +50,8 @@ func Load(path string, parent *Config) (*Config, bool) {
 		v,
 		parent,
 		nil,
-	}, err != nil
+		New,
+	}
 }
 
 func (c *Config) Get(key string) any {
@@ -120,8 +125,8 @@ func GetUserConfigPath(user string) string {
 
 func GetAppConfig() *Config {
 	if AppConfig == nil {
-		v, err := Load("./settings.json", nil)
-		if err {
+		v := Load("./settings.json", nil)
+		if v.New {
 			v.Data = Default
 		}
 		AppConfig = v
@@ -132,7 +137,7 @@ func GetAppConfig() *Config {
 func (c *Config) GetUserConfig(user string) (*Config, error) {
 	v, ok := UsersConfig[user]
 	if !ok {
-		v, _ = Load(GetUserConfigPath(user), c)
+		v = Load(GetUserConfigPath(user), c)
 		UsersConfig[user] = v
 	}
 	return v, nil

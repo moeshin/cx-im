@@ -41,12 +41,16 @@ var initCmd = &cobra.Command{
 		errs.Panic(client.GetCourses(courses))
 		errs.Panic(userConfig.Save())
 
+		save := appConfig.New
 		isSetDefault, err := cmd.Flags().GetBool("default")
 		errs.Print(err)
 		if isSetDefault || !appConfig.HasDefaultUsername() {
 			appConfig.SetDefaultUsername(username)
+			save = true
 		}
-		errs.Panic(appConfig.Save())
+		if save {
+			errs.Panic(appConfig.Save())
+		}
 	},
 }
 
