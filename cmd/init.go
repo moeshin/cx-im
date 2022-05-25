@@ -41,11 +41,16 @@ var initCmd = &cobra.Command{
 		errs.Panic(client.GetCourses(courses))
 		errs.Panic(userConfig.Save())
 
-		//appConfig := config.GetAppConfig()
-		//errs.Panic(appConfig.Save())
+		isSetDefault, err := cmd.Flags().GetBool("default")
+		errs.Print(err)
+		if isSetDefault || !appConfig.HasDefaultUsername() {
+			appConfig.SetDefaultUsername(username)
+		}
+		errs.Panic(appConfig.Save())
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
+	initCmd.Flags().BoolP("default", "d", false, "设置为默认账号")
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/moeshin/go-errs"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"sync"
@@ -80,6 +81,30 @@ func (c *Config) String() string {
 	return string(data)
 }
 
+func (c *Config) GetDefaultUsername() string {
+	var s string
+	v, ok := c.Data.Get(DefaultUsername)
+	if ok {
+		s, _ = v.(string)
+	}
+	if s != "" {
+		_, err := os.Stat(GetUserConfigPath(s))
+		if err != nil {
+			return ""
+		}
+	}
+	return s
+}
+
+func (c *Config) HasDefaultUsername() bool {
+	return c.GetDefaultUsername() != ""
+}
+
+func (c *Config) SetDefaultUsername(username string) {
+	log.Println("设置默认用户：", username)
+	c.Data.Set(DefaultUsername, username)
+}
+
 var Default = orderedmap.New()
 
 var AppConfig *Config
@@ -87,6 +112,10 @@ var UsersConfig = map[string]*Config{}
 
 func GetUserDir(user string) string {
 	return "users/" + user
+}
+
+func GetUserConfigPath(user string) string {
+	return GetUserDir(user) + "/config.json"
 }
 
 func GetAppConfig() *Config {
@@ -103,7 +132,7 @@ func GetAppConfig() *Config {
 func (c *Config) GetUserConfig(user string) (*Config, error) {
 	v, ok := UsersConfig[user]
 	if !ok {
-		v, _ = Load(GetUserDir(user)+"/config.json", c)
+		v, _ = Load(GetUserConfigPath(user), c)
 		UsersConfig[user] = v
 	}
 	return v, nil
