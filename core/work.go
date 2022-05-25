@@ -148,7 +148,7 @@ func (w *Work) OnMessage(msg []byte) {
 }
 
 func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
-	b, err := buf.Read()
+	b, err := buf.ReadE()
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 	if i == 0 {
 		exit = true
 	} else {
-		i, err := buf.Read()
+		i, err := buf.ReadE()
 		if err != nil {
 			return err
 		}
