@@ -1,13 +1,54 @@
 package im
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"reflect"
 	"strconv"
 	"time"
 )
+
+var (
+	MsgHeaderCourse = []byte{0x08, 0x00, 0x40, 0x02, 0x4a}
+	MsgHeaderActive = []byte{0x08, 0x00, 0x40, 0x00, 0x4a}
+	MsgFooter       = []byte{
+		0x1A, 0x16, 0x63, 0x6F, 0x6E, 0x66, 0x65, 0x72, 0x65, 0x6E, 0x63, 0x65, 0x2E, 0x65, 0x61, 0x73, 0x65, 0x6D,
+		0x6F, 0x62, 0x2E, 0x63, 0x6F, 0x6D,
+	}
+	MsgPartAttachment = []byte{
+		0x0a, 0x61, 0x74, 0x74, 0x61, 0x63, 0x68, 0x6D, 0x65, 0x6E, 0x74, 0x10, 0x08, 0x32,
+	}
+)
+
+func indexSlice[T any](data []T, slice []T) int {
+	dataLen := len(data)
+	matchLen := len(slice)
+	if dataLen >= matchLen {
+		length := dataLen - matchLen
+		for i := 0; i <= length; i++ {
+			if reflect.DeepEqual(slice, data[i:i+matchLen]) {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func lastIndexSlice[T any](data []T, slice []T) int {
+	dataLen := len(data)
+	matchLen := len(slice)
+	if dataLen >= matchLen {
+		for i := dataLen - matchLen; i >= 0; i-- {
+			if reflect.DeepEqual(slice, data[i:i+matchLen]) {
+				return i
+			}
+		}
+	}
+	return -1
+}
 
 func GetUrl() string {
 	const (
@@ -65,4 +106,21 @@ func BuildLoginMsg(uid string, token string) []byte {
 	d = append(d, bToken...)
 	d = append(d, 0x50, 0x00, 0x58, 0x00)
 	return BuildMsg(d)
+}
+
+func GetChatId(data []byte) string {
+	index := lastIndexSlice(data, MsgFooter)
+	if index != -1 {
+		data = data[:index]
+		i := bytes.LastIndexByte(data, 0x12)
+		if i != -1 {
+			i++
+			size := int(data[i])
+			i++
+			if i+size == index {
+				return string(data[i:])
+			}
+		}
+	}
+	return ""
 }

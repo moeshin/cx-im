@@ -106,7 +106,7 @@ func (c *Config) HasDefaultUsername() bool {
 }
 
 func (c *Config) SetDefaultUsername(username string) {
-	log.Println("设置默认用户：", username)
+	log.Println("设置默认用户：" + username)
 	c.Data.Set(DefaultUsername, username)
 }
 
