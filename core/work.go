@@ -183,6 +183,98 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		buf.Buf[buf.Pos:end],
 	)))
 
+	buf = im.NewBuf(buf.Buf[buf.Pos+1:])
+	att, err := buf.ReadAttachment()
+	if att != nil {
+		i := im.IndexSlice(buf.Buf, []byte(chatId))
+		if i == -1 {
+			log.Println("IM 解析失败，无法获取 attachment")
+			return err
+		}
+		buf.Pos = i
+		// TODO GetCourseConfig
+		return nil
+	}
+	attType := GodJObjectI(att, "attachmentType", 0.)
+	if attType == 1 {
+		topic := GodJObjectI(att, "att_topic", JObject{})
+		title, ok := GetJObject[string](topic, "content")
+		if !ok {
+			title = GodJObjectI(topic, "title", "")
+		}
+		log.Printf("IM 收到来自《%s》的主题讨论：%s\n", GodJObjectI(topic, "name", ""), title)
+		return nil
+	}
+	if attType != 15 {
+		log.Println("IM 解析失败，attachmentType != 15")
+		log.Printf("attr: %#v\n", att)
+		return nil
+	}
+
+	attCourse, ok := GetJObject[JObject](att, "att_chat_course")
+	if !ok {
+		log.Println("IM 解析失败，无法获取 att_chat_course")
+		log.Printf("attr: %#v\n", att)
+		return nil
+	}
+
+	activeId := GodJObjectI(attCourse, "aid", 0.)
+	if activeId == 0 {
+		log.Println("IM 解析失败，无法获取 aid")
+		log.Printf("attr: %#v\n", att)
+	}
+	log.Println("IM activeId:", activeId)
+
+	courseInfo, ok := GetJObject[JObject](att, "courseInfo")
+	if !ok {
+		log.Println("IM 解析失败，无法获取 courseInfo")
+		log.Printf("attr: %#v\n", att)
+		return nil
+	}
+
+	aType := GodJObjectI(courseInfo, "atype", -1.)
+	log.Println("IM aType:", aType)
+	courseName := GodJObjectI(courseInfo, "coursename", "")
+
+	{
+		var name string
+		if aType == -1 && GodJObjectI(attCourse, "type", 0.) == 4 {
+			name = "直播"
+		} else {
+			name = GodJObjectI(attCourse, "atypeName", "")
+			if aType != 17 && aType != 35 {
+				name += "活动"
+			}
+		}
+		log.Printf("IM 收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
+	}
+
+	activeType := GodJObjectI(attCourse, "activeType", 0.)
+	if (activeType != 0 && activeType != 2) || (aType != 0 && aType != 2) {
+		/**
+		aType:
+		0: 签到
+		2: 签到
+		4: 抢答
+		11: 选人
+		14: 问卷
+		17: 直播
+		23: 评分
+		35: 分组任务
+		42: 随堂练习
+		43: 投票
+		49: 白板
+
+		没有通知：计时器 47
+		没有测试：腾讯会议
+
+		type: 4: 直播
+		*/
+		log.Println("IM 接收到的不是签到活动")
+		log.Printf("attr: %#v\n", att)
+		return nil
+	}
+
 	// TODO
 	return nil
 }

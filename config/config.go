@@ -173,13 +173,14 @@ func init() {
 }
 
 func GocObj(data *Object, key string) *Object {
-	r := orderedmap.New()
+	var obj *Object
 	v, ok := data.Get(key)
 	if ok {
 		vv, _ := v.(Object)
-		r = &vv
+		obj = &vv
 	} else {
-		data.Set(key, r)
+		obj = orderedmap.New()
+		data.Set(key, obj)
 	}
-	return r
+	return obj
 }

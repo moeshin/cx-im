@@ -32,3 +32,24 @@ func (j JArray) Get(i int) any {
 	}
 	return nil
 }
+
+func GetJObject[T any](obj JObject, key string) (T, bool) {
+	v, ok := obj[key]
+	return v, ok
+}
+
+func GodJObject[T any](obj JObject, key string, def T) (T, bool) {
+	v, ok := obj[key]
+	if ok {
+		v, ok = v.(T)
+		if ok {
+			return v, true
+		}
+	}
+	return def, false
+}
+
+func GodJObjectI[T any](obj JObject, key string, def T) T {
+	v, _ := GodJObject(obj, key, def)
+	return v
+}

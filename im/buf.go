@@ -75,7 +75,7 @@ func (b *Buf) ReadString2() (string, error) {
 }
 
 func (b *Buf) ReadAttachment() (map[string]any, error) {
-	i := indexSlice(b.Buf, MsgPartAttachment)
+	i := IndexSlice(b.Buf, MsgPartAttachment)
 	if i == -1 {
 		return nil, errors.New("未找到 MsgPartAttachment")
 	}

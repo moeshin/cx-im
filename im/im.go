@@ -23,7 +23,7 @@ var (
 	}
 )
 
-func indexSlice[T any](data []T, slice []T) int {
+func IndexSlice[T any](data []T, slice []T) int {
 	dataLen := len(data)
 	matchLen := len(slice)
 	if dataLen >= matchLen {
@@ -37,7 +37,7 @@ func indexSlice[T any](data []T, slice []T) int {
 	return -1
 }
 
-func lastIndexSlice[T any](data []T, slice []T) int {
+func LastIndexSlice[T any](data []T, slice []T) int {
 	dataLen := len(data)
 	matchLen := len(slice)
 	if dataLen >= matchLen {
@@ -122,7 +122,7 @@ func BuildReleaseSessionMsg(chatId string, session []byte) []byte {
 }
 
 func GetChatId(data []byte) string {
-	index := lastIndexSlice(data, MsgFooter)
+	index := LastIndexSlice(data, MsgFooter)
 	if index != -1 {
 		data = data[:index]
 		i := bytes.LastIndexByte(data, 0x12)
