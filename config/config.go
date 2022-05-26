@@ -54,11 +54,24 @@ func Load(path string, parent *Config) *Config {
 	}
 }
 
-func (c *Config) Get(key string) any {
-	if v, ok := c.Data.Get(key); ok {
-		return v
+func (c *Config) Get(key string, r bool) any {
+	v, ok := c.Data.Get(key)
+	if r && (!ok || v == nil) {
+		if c.Parent == nil {
+			v, _ = Default.Get(key)
+		} else {
+			v = c.Parent.Get(key, true)
+		}
 	}
-	return c.Parent.Get(key)
+	return v
+}
+
+func (c *Config) GetR(key string) any {
+	return c.Get(key, true)
+}
+
+func (c *Config) GetC(key string) any {
+	return c.Get(key, false)
 }
 
 func (c *Config) JsonMarshal() ([]byte, error) {
@@ -66,6 +79,12 @@ func (c *Config) JsonMarshal() ([]byte, error) {
 }
 
 func (c *Config) Save() error {
+	if c.Path == "" {
+		if c.Parent == nil {
+			return nil
+		}
+		return c.Parent.Save()
+	}
 	dir := path.Dir(c.Path)
 	data, err := c.JsonMarshal()
 	if err != nil {
@@ -108,6 +127,21 @@ func (c *Config) HasDefaultUsername() bool {
 func (c *Config) SetDefaultUsername(username string) {
 	log.Println("设置默认用户：" + username)
 	c.Data.Set(DefaultUsername, username)
+}
+
+func (c *Config) GetCourses() *Object {
+	return GocObjI(c.Data, Courses)
+}
+
+func (c *Config) GetCourseConfig(chatId string) *Config {
+	course, ok := GocObj(c.GetCourses(), chatId)
+	return &Config{
+		"",
+		course,
+		nil,
+		nil,
+		!ok,
+	}
 }
 
 var Default = orderedmap.New()
@@ -172,15 +206,36 @@ func init() {
 	set(SignCode, true)
 }
 
-func GocObj(data *Object, key string) *Object {
-	var obj *Object
+func GocObj(data *Object, key string) (*Object, bool) {
 	v, ok := data.Get(key)
 	if ok {
-		vv, _ := v.(Object)
-		obj = &vv
-	} else {
-		obj = orderedmap.New()
-		data.Set(key, obj)
+		v, ok := v.(Object)
+		if ok {
+			return &v, true
+		}
 	}
-	return obj
+	obj := orderedmap.New()
+	data.Set(key, obj)
+	return obj, false
+}
+
+func GocObjI(data *Object, key string) *Object {
+	v, _ := GocObj(data, key)
+	return v
+}
+
+func God[T any](config *Config, key string, def T, r bool) (T, bool) {
+	v := config.Get(key, r)
+	if v != nil {
+		v, ok := v.(T)
+		if ok {
+			return v, true
+		}
+	}
+	return def, false
+}
+
+func GodCI[T any](config *Config, key string, def T) T {
+	v, _ := God(config, key, def, false)
+	return v
 }

@@ -275,6 +275,15 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		return nil
 	}
 
+	courseConfig := w.Config.GetCourseConfig(chatId)
+	if courseConfig.New {
+		log.Println("该课程不在配置列表")
+		courseConfig.Data.Set(config.ChatId, chatId)
+		courseConfig.Data.Set(config.CourseName, courseName)
+		courseConfig.Data.Set(config.CourseId, GodJObjectI(courseInfo, "courseid", ""))
+		courseConfig.Data.Set(config.ClassId, GodJObjectI(courseInfo, "classid", ""))
+		errs.Print(courseConfig.Save())
+	}
 	// TODO
 	return nil
 }

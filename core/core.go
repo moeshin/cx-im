@@ -40,7 +40,7 @@ func GetJObject[T any](obj JObject, key string) (T, bool) {
 
 func GodJObject[T any](obj JObject, key string, def T) (T, bool) {
 	v, ok := obj[key]
-	if ok {
+	if ok && v != nil {
 		v, ok = v.(T)
 		if ok {
 			return v, true

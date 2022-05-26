@@ -36,7 +36,7 @@ var initCmd = &cobra.Command{
 		data.Set(config.Password, password)
 		data.Set(config.Fid, fid)
 
-		courses := config.GocObj(data, config.Courses)
+		courses := userConfig.GetCourses()
 		errs.Panic(client.GetCourses(courses))
 		errs.Panic(userConfig.Save())
 

@@ -168,7 +168,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	className := AnyToString(data["name"])
 	log.Printf("发现课程：《%s》『%s』(%s, %s) %s\n", courseName, className, courseId, classId, chatId)
 
-	course := config.GocObj(courses, chatId)
+	course := config.GocObjI(courses, chatId)
 	course.Set(config.ChatId, chatId)
 	course.Set(config.CourseId, courseId)
 	course.Set(config.ClassId, classId)
