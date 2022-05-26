@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cx-im/models"
 	"encoding/json"
 	"github.com/iancoleman/orderedmap"
 	"github.com/moeshin/go-errs"
@@ -147,6 +148,18 @@ func (c *Config) GetCourseConfig(chatId string) *Config {
 	}
 }
 
+func (c *Config) GetSignOptions(signTypeKey string) *models.SignOptions {
+	if !GodRI(c, signTypeKey, false) {
+		return nil
+	}
+	return &models.SignOptions{
+		Address:   GodRI(c, SignAddress, DefaultSignAddress),
+		Longitude: GodRI(c, SignLongitude, DefaultSignLongitude),
+		Latitude:  GodRI(c, SignLatitude, DefaultSignLatitude),
+		Ip:        GodRI(c, SignIp, DefaultSignIp),
+	}
+}
+
 var Default = orderedmap.New()
 
 var AppConfig *Config
@@ -180,6 +193,13 @@ func (c *Config) GetUserConfig(user string) *Config {
 	return v
 }
 
+const (
+	DefaultSignAddress   = "中国"
+	DefaultSignLongitude = "-1"
+	DefaultSignLatitude  = "-1"
+	DefaultSignIp        = "1.1.1.1"
+)
+
 func init() {
 	set := func(k string, v any) {
 		Default.Set(k, v)
@@ -195,10 +215,10 @@ func init() {
 	set(TelegramBotToken, "")
 	set(TelegramBotChatId, "")
 
-	set(SignAddress, "中国")
-	set(SignLongitude, -1)
-	set(SignLatitude, -1)
-	set(SignIp, "1.1.1.1")
+	set(SignAddress, DefaultSignAddress)
+	set(SignLongitude, DefaultSignLongitude)
+	set(SignLatitude, DefaultSignLatitude)
+	set(SignIp, DefaultSignIp)
 
 	set(SignDelay, 0)
 	set(SignEnable, false)
@@ -240,5 +260,10 @@ func God[T Value](config *Config, key string, def T, r bool) (T, bool) {
 
 func GodCI[T Value](config *Config, key string, def T) T {
 	v, _ := God(config, key, def, false)
+	return v
+}
+
+func GodRI[T Value](config *Config, key string, def T) T {
+	v, _ := God(config, key, def, true)
 	return v
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/moeshin/go-errs"
 	"log"
 	"reflect"
+	"strconv"
 )
 
 type Work struct {
@@ -239,8 +240,8 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		return nil
 	}
 
-	activeId := GodJObjectI(attCourse, "aid", 0.)
-	if activeId == 0 {
+	activeId := strconv.FormatInt(int64(GodJObjectI(attCourse, "aid", 0.)), 10)
+	if activeId == "0" {
 		log.Println("IM 解析失败，无法获取 aid")
 		log.Printf("attr: %#v\n", att)
 		return nil
@@ -271,8 +272,8 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		log.Printf("IM 收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
 	}
 
-	activeType := GodJObjectI(attCourse, "activeType", 0.)
-	if (activeType != 0 && activeType != 2) || (aType != 0 && aType != 2) {
+	attActiveType := GodJObjectI(attCourse, "activeType", 0.)
+	if (attActiveType != 0 && attActiveType != 2) || (aType != 0 && aType != 2) {
 		/**
 		aType:
 		0: 签到
@@ -305,6 +306,51 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		courseConfig.Data.Set(config.CourseId, GodJObjectI(courseInfo, "courseid", ""))
 		courseConfig.Data.Set(config.ClassId, GodJObjectI(courseInfo, "classid", ""))
 		errs.Print(courseConfig.Save())
+	}
+
+	work := NewWorkSign(courseConfig)
+	active, err := w.Client.GetActiveDetail(activeId)
+	if err != nil {
+		return err
+	}
+
+	activeType := GodJObjectI(active, "activeType", -1.)
+	if activeType != 2 {
+		log.Println("不是签到活动，activeType:", activeType)
+		return nil
+	}
+
+	signType := GetSignType(int8(GodJObjectI(active, "otherId", -1.)))
+	log.Println(signType, GetSignTypeName(signType))
+	if signType == SignNormal {
+		photo := GodJObjectI(active, "otherId", 0.)
+		if photo != 0 {
+			signType = SignPhoto
+		}
+	}
+
+	if work.SetSignType(signType, active) || work.IsSkip() {
+		return nil
+	}
+
+	signOptions := work.Opts
+	switch signType {
+	case SignPhoto:
+		// TODO Upload image
+		break
+	case SignLocation:
+		if GodJObjectI(active, "ifopenAddress", 0.) != 0 {
+			signOptions.Address = GodJObjectI(active, "locationText", config.DefaultSignAddress)
+			signOptions.Longitude = GodJObjectI(active, "locationLongitude", config.DefaultSignLongitude)
+			signOptions.Latitude = GodJObjectI(active, "locationLatitude", config.DefaultSignLatitude)
+			log.Printf(
+				"教师指定签到地点：%s (%s, %s) ~%s 米\n",
+				signOptions.Address,
+				signOptions.Longitude,
+				signOptions.Latitude,
+				GodJObjectI(active, "locationRange", "0"),
+			)
+		}
 	}
 	// TODO
 	return nil

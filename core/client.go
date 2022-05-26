@@ -198,6 +198,22 @@ func (c *CxClient) GetImToken() (string, string, error) {
 	return match[1], match[2], nil
 }
 
+func (c *CxClient) GetActiveDetail(activeId string) (JObject, error) {
+	query := url.Values{
+		"activeId": []string{activeId},
+	}
+	resp, err := c.Client.Get("https://mobilelearn.chaoxing.com/v2/apis/active/getPPTActiveInfo?" + query.Encode())
+	if err != nil {
+		return nil, err
+	}
+	defer errs.CloseResponse(resp)
+	err = testCxClientStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	return parseCxClientJson(resp)
+}
+
 func testCxClientStatus(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
@@ -222,10 +238,10 @@ func parseCxClientJson(resp *http.Response) (JObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	if v.Result == 1 {
+	if v.Result == 1 && v.Data != nil {
 		return v.Data, nil
 	}
-	msg := strconv.Itoa(v.Result) + ": " + v.Msg
+	msg := "parseCxClientJson\n" + strconv.Itoa(v.Result) + ": " + v.Msg
 	if v.ErrorMsg != nil {
 		msg += "\n" + *v.ErrorMsg
 	}
