@@ -3,6 +3,7 @@ package core
 import (
 	"cx-im/config"
 	"cx-im/im"
+	"cx-im/im/cmd_course_chat_feedback"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -185,14 +186,29 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 
 	buf = im.NewBuf(buf.Buf[buf.Pos+1:])
 	att, err := buf.ReadAttachment()
-	if att != nil {
-		i := im.IndexSlice(buf.Buf, []byte(chatId))
+	if att == nil {
+		i = im.IndexSlice(buf.Buf, cmd_course_chat_feedback.BytesCmd)
 		if i == -1 {
 			log.Println("IM 解析失败，无法获取 attachment")
 			return err
 		}
-		buf.Pos = i
-		// TODO GetCourseConfig
+		state, err := cmd_course_chat_feedback.GetState(buf)
+		var s string
+		if errs.Print(err) {
+			s = "未知状态"
+		} else if state {
+			s = "开启"
+		} else {
+			s = "关闭"
+		}
+		courseConfig := w.Config.GetCourseConfig(chatId)
+		courseName := config.GodCI(courseConfig, config.CourseName, "")
+		log.Printf("IM 收到来自《%s》的群聊：%s\n", courseName, s)
+		activeId, err := cmd_course_chat_feedback.GetActiveId(buf)
+		if err != nil {
+			return err
+		}
+		log.Println("active_id:", activeId)
 		return nil
 	}
 	attType := GodJObjectI(att, "attachmentType", 0.)
