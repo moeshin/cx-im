@@ -134,7 +134,7 @@ func (w *Work) OnMessage(msg []byte) {
 		log.Println("IM 解析失败，无法获取 chatId")
 		return
 	}
-	log.Println("chatId:", chatId)
+	log.Println("IM chatId:", chatId)
 
 	sessionEnd := 11
 	buf := im.NewBuf(msg)
@@ -208,17 +208,22 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		if err != nil {
 			return err
 		}
-		log.Println("active_id:", activeId)
+		log.Println("IM activeId:", activeId)
 		return nil
 	}
 	attType := GodJObjectI(att, "attachmentType", 0.)
 	if attType == 1 {
-		topic := GodJObjectI(att, "att_topic", JObject{})
-		title, ok := GetJObject[string](topic, "content")
+		topic := GodJObjectI(att, "att_topic", map[string]any{})
+		title, ok := GodJObject(topic, "content", "")
 		if !ok {
 			title = GodJObjectI(topic, "title", "")
 		}
-		log.Printf("IM 收到来自《%s》的主题讨论：%s\n", GodJObjectI(topic, "name", ""), title)
+		courseName := GodJObjectI(GodJObjectI(topic, "att_group", map[string]any{}), "name", "")
+		if courseName == "" {
+			courseConfig := w.Config.GetCourseConfig(chatId)
+			courseName = config.GodCI(courseConfig, config.CourseName, "")
+		}
+		log.Printf("IM 收到来自《%s》的主题讨论：%s\n", courseName, title)
 		return nil
 	}
 	if attType != 15 {
@@ -227,7 +232,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		return nil
 	}
 
-	attCourse, ok := GetJObject[JObject](att, "att_chat_course")
+	attCourse, ok := GodJObject(att, "att_chat_course", map[string]any{})
 	if !ok {
 		log.Println("IM 解析失败，无法获取 att_chat_course")
 		log.Printf("attr: %#v\n", att)
@@ -238,17 +243,18 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 	if activeId == 0 {
 		log.Println("IM 解析失败，无法获取 aid")
 		log.Printf("attr: %#v\n", att)
+		return nil
 	}
 	log.Println("IM activeId:", activeId)
 
-	courseInfo, ok := GetJObject[JObject](att, "courseInfo")
+	courseInfo, ok := GodJObject(attCourse, "courseInfo", map[string]any{})
 	if !ok {
 		log.Println("IM 解析失败，无法获取 courseInfo")
 		log.Printf("attr: %#v\n", att)
 		return nil
 	}
 
-	aType := GodJObjectI(courseInfo, "atype", -1.)
+	aType := GodJObjectI(attCourse, "atype", -1.)
 	log.Println("IM aType:", aType)
 	courseName := GodJObjectI(courseInfo, "coursename", "")
 

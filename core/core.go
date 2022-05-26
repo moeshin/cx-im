@@ -6,6 +6,9 @@ import (
 
 type JObject map[string]any
 type JArray []any
+type JValue interface {
+	string | float64 | bool | []any | map[string]any
+}
 
 func AnyToString(data any) string {
 	switch v := data.(type) {
@@ -33,15 +36,10 @@ func (j JArray) Get(i int) any {
 	return nil
 }
 
-func GetJObject[T any](obj JObject, key string) (T, bool) {
-	v, ok := obj[key]
-	return v, ok
-}
-
-func GodJObject[T any](obj JObject, key string, def T) (T, bool) {
+func GodJObject[T JValue](obj JObject, key string, def T) (T, bool) {
 	v, ok := obj[key]
 	if ok && v != nil {
-		v, ok = v.(T)
+		v, ok := v.(T)
 		if ok {
 			return v, true
 		}
@@ -49,7 +47,7 @@ func GodJObject[T any](obj JObject, key string, def T) (T, bool) {
 	return def, false
 }
 
-func GodJObjectI[T any](obj JObject, key string, def T) T {
+func GodJObjectI[T JValue](obj JObject, key string, def T) T {
 	v, _ := GodJObject(obj, key, def)
 	return v
 }

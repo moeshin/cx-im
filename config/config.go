@@ -13,6 +13,9 @@ import (
 )
 
 type Object = orderedmap.OrderedMap
+type Value interface {
+	string | float64 | bool | []any | map[string]any
+}
 
 type User struct {
 	Running bool
@@ -224,7 +227,7 @@ func GocObjI(data *Object, key string) *Object {
 	return v
 }
 
-func God[T any](config *Config, key string, def T, r bool) (T, bool) {
+func God[T Value](config *Config, key string, def T, r bool) (T, bool) {
 	v := config.Get(key, r)
 	if v != nil {
 		v, ok := v.(T)
@@ -235,7 +238,7 @@ func God[T any](config *Config, key string, def T, r bool) (T, bool) {
 	return def, false
 }
 
-func GodCI[T any](config *Config, key string, def T) T {
+func GodCI[T Value](config *Config, key string, def T) T {
 	v, _ := God(config, key, def, false)
 	return v
 }
