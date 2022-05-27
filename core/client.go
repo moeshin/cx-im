@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/moeshin/go-errs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -114,8 +113,8 @@ func (c *CxClient) Login() error {
 	if err != nil {
 		return err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return err
 	}
@@ -140,8 +139,8 @@ func (c *CxClient) GetCourses(courses *config.Object) error {
 	if err != nil {
 		return err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return err
 	}
@@ -153,7 +152,7 @@ func (c *CxClient) GetCourses(courses *config.Object) error {
 	for _, match := range matches {
 		courseId := match[1]
 		classId := match[2]
-		errs.Print(c.GetCourseDetail(courses, courseId, classId))
+		c.Log.Print(c.GetCourseDetail(courses, courseId, classId))
 	}
 	return nil
 }
@@ -168,8 +167,8 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	if err != nil {
 		return err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return err
 	}
@@ -196,8 +195,8 @@ func (c *CxClient) GetImToken() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return "", "", err
 	}
@@ -220,8 +219,8 @@ func (c *CxClient) GetActiveDetail(activeId string) (JObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -236,8 +235,8 @@ func (c *CxClient) PreSign(activeId string) error {
 	if err != nil {
 		return err
 	}
-	defer errs.CloseResponse(resp)
-	return testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	return testResponseStatus(resp)
 }
 
 func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string, error) {
@@ -255,8 +254,8 @@ func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string
 	if err != nil {
 		return "", err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
 	}
@@ -269,8 +268,8 @@ func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string
 
 func (c *CxClient) GetImageHostingToken() (string, error) {
 	resp, err := c.Client.Get("https://pan-yz.chaoxing.com/api/token/uservalid")
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
 	}
@@ -299,10 +298,10 @@ func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, err
 	if err != nil {
 		return "", nil, err
 	}
-	defer errs.Close(writer)
+	defer c.Log.ErrClose(writer)
 	err = writer.WriteField("puid", c.Uid)
 	if err != nil {
-		errs.Close(writer)
+		c.Log.ErrClose(writer)
 		return "", nil, err
 	}
 	err = writer.WriteField("_token", token)
@@ -317,7 +316,7 @@ func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, err
 	if err != nil {
 		return "", nil, err
 	}
-	defer errs.Close(file)
+	defer c.Log.ErrClose(file)
 	_, err = io.Copy(fw, file)
 	if err != nil {
 		return "", nil, err
@@ -334,13 +333,12 @@ func (c *CxClient) UploadImage(filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer errs.CloseResponse(resp)
-	err = testCxClientStatus(resp)
+	defer c.Log.CloseResponse(resp)
+	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
 	}
 	data, err := ioutil.ReadAll(resp.Body)
-	log.Println("data", string(data))
 	if err != nil {
 		return "", err
 	}
@@ -355,7 +353,7 @@ func (c *CxClient) UploadImage(filename string) (string, error) {
 	return v.ObjectId, nil
 }
 
-func testCxClientStatus(resp *http.Response) error {
+func testResponseStatus(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
 	}

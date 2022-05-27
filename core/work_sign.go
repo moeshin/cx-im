@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"cx-im/config"
 	"cx-im/model"
-	"log"
 	"math/big"
 	"time"
 )
@@ -34,11 +33,11 @@ func (w *WorkSign) SetSignType(signType SignType, active JObject) bool {
 	}
 	switch signType {
 	case SignTypeGesture:
-		log.Println("手势：", getSignCode())
+		w.Log.Println("手势：", getSignCode())
 	case SignTypeCode:
-		log.Println("签到码：", getSignCode())
+		w.Log.Println("签到码：", getSignCode())
 	case SignTypeQR:
-		log.Println("目前无法二维码签到")
+		w.Log.Println("目前无法二维码签到")
 		return true
 	}
 	return false
@@ -46,12 +45,12 @@ func (w *WorkSign) SetSignType(signType SignType, active JObject) bool {
 
 func (w *WorkSign) IsSkip() bool {
 	if config.GodRI(w.Cfg, config.SignEnable, false) {
-		log.Println("因用户配置", config.SignEnable, "跳过签到")
+		w.Log.Println("因用户配置", config.SignEnable, "跳过签到")
 		return true
 	}
 	w.Opts = w.Cfg.GetSignOptions(GetSignTypeKey(w.Type))
 	if w.Opts == nil {
-		log.Println("因用户配置，跳过签到")
+		w.Log.Println("因用户配置，跳过签到")
 		return true
 	}
 	return false
@@ -67,18 +66,18 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 	if l == 1 {
 		path = images[0]
 	} else {
-		log.Println("将从这些图片中随机选择一张进行图片签到：", images)
+		w.Log.Println("将从这些图片中随机选择一张进行图片签到：", images)
 		i := 0
 		b, err := rand.Int(rand.Reader, big.NewInt(int64(l)))
 		if err != nil {
-			log.Println("随机失败", err)
+			w.Log.Println("随机失败", err)
 		} else {
 			i = int(b.Int64())
 		}
 		path = images[i]
 	}
 	if path != "" {
-		log.Println("将使用这张照片进行图片签到：", path)
+		w.Log.Println("将使用这张照片进行图片签到：", path)
 	}
 	return path
 }
@@ -96,8 +95,8 @@ func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 		}
 	}
 	if err != nil {
-		log.Println("上传图片失败", err)
+		w.Log.Println("上传图片失败", err)
 	}
-	log.Println("将使用一张黑图进行图片签到")
+	w.Log.Println("将使用一张黑图进行图片签到")
 	return ImageIdNone
 }

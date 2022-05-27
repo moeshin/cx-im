@@ -148,13 +148,13 @@ func (w *Work) onMessage(msg []byte, startTime int64) {
 	if !reflect.DeepEqual(header, im.MsgHeaderActive) {
 		return
 	}
-	log.Println("IM 接收到活动信息")
+	w.Log.Println("IM 接收到活动信息")
 	chatId := im.GetChatId(msg)
 	if chatId == "" {
-		log.Println("IM 解析失败，无法获取 chatId")
+		w.Log.Println("IM 解析失败，无法获取 chatId")
 		return
 	}
-	log.Println("IM chatId:", chatId)
+	w.Log.Println("IM chatId:", chatId)
 
 	sessionEnd := 11
 	buf := im.NewBuf(msg)
@@ -204,7 +204,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		buf.Buf[buf.Pos:end],
 	)))
 
-	logN := w.Log.NewLogN()
+	logN := w.Log.NewLogN(w.Config)
 	defer w.Log.ErrClose(logN)
 	logN.Println("IM chatId:", chatId)
 
@@ -227,12 +227,12 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		}
 		courseConfig := w.Config.GetCourseConfig(chatId)
 		courseName := config.GodCI(courseConfig, config.CourseName, "")
-		logN.Printf("IM 收到来自《%s》的群聊：%s\n", courseName, s)
+		logN.Printf("收到来自《%s》的群聊：%s\n", courseName, s)
 		activeId, err := cmd_course_chat_feedback.GetActiveId(buf)
 		if w.Log.ErrPrint(err) {
 			return
 		}
-		logN.Println("IM activeId:", activeId)
+		logN.Println("activeId:", activeId)
 		return
 	}
 	attType := GodJObjectI(att, "attachmentType", 0.)
@@ -247,7 +247,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 			courseConfig := w.Config.GetCourseConfig(chatId)
 			courseName = config.GodCI(courseConfig, config.CourseName, "")
 		}
-		logN.Printf("IM 收到来自《%s》的主题讨论：%s\n", courseName, title)
+		logN.Printf("收到来自《%s》的主题讨论：%s\n", courseName, title)
 		return
 	}
 	if attType != 15 {
@@ -269,7 +269,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		logN.Printf("attr: %#v\n", att)
 		return
 	}
-	logN.Println("IM activeId:", activeId)
+	logN.Println("activeId:", activeId)
 
 	courseInfo, ok := GodJObject(attCourse, "courseInfo", map[string]any{})
 	if !ok {
@@ -279,7 +279,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 	}
 
 	aType := GodJObjectI(attCourse, "atype", -1.)
-	logN.Println("IM aType:", aType)
+	logN.Println("aType:", aType)
 	courseName := GodJObjectI(courseInfo, "coursename", "")
 
 	{
@@ -292,7 +292,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 				name += "活动"
 			}
 		}
-		logN.Printf("IM 收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
+		logN.Printf("收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
 	}
 
 	attActiveType := GodJObjectI(attCourse, "activeType", 0.)
@@ -316,7 +316,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 
 		type: 4: 直播
 		*/
-		logN.Println("IM 接收到的不是签到活动")
+		logN.Println("接收到的不是签到活动")
 		logN.Printf("attr: %#v\n", att)
 		return
 	}
@@ -330,6 +330,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		courseConfig.Data.Set(config.ClassId, GodJObjectI(courseInfo, "classid", ""))
 		logN.ErrPrint(courseConfig.Save())
 	}
+	logN.Cfg = courseConfig
 
 	work := NewWorkSign(courseConfig, logN.LogE)
 	active, err := w.Client.GetActiveDetail(activeId)
@@ -343,6 +344,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		return
 	}
 
+	logN.State = NotifySign
 	signType := GetSignType(int8(GodJObjectI(active, "otherId", -1.)))
 	logN.Println(signType, GetSignTypeName(signType))
 	if signType == SignTypeNormal {
@@ -413,6 +415,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		logN.Println("签到失败：", content)
 		return
 	}
+	logN.State = NotifySignOk
 	logN.Println(content)
 	return
 }

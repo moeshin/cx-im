@@ -142,7 +142,7 @@ func (c *Config) GetCourseConfig(chatId string) *Config {
 	return &Config{
 		"",
 		course,
-		nil,
+		c,
 		nil,
 		!ok,
 	}
