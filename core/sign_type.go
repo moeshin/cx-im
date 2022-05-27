@@ -5,32 +5,32 @@ import "cx-im/config"
 type SignType = int8
 
 const (
-	SignUnknown SignType = iota - 1
-	SignNormal
-	SignPhoto
-	SignQR
-	SignGesture
-	SignLocation
-	SignCode
+	SignTypeUnknown SignType = iota - 1
+	SignTypeNormal
+	SignTypePhoto
+	SignTypeQR
+	SignTypeGesture
+	SignTypeLocation
+	SignTypeCode
 	SignTypeLength
 )
 
 func GetSignTypeName(signType SignType) string {
 	var n string
 	switch signType {
-	case SignUnknown:
+	case SignTypeUnknown:
 		n = "未知签到类型"
-	case SignNormal:
+	case SignTypeNormal:
 		n = "普通签到"
-	case SignPhoto:
+	case SignTypePhoto:
 		n = "图片签到"
-	case SignQR:
+	case SignTypeQR:
 		n = "二维码签到"
-	case SignGesture:
+	case SignTypeGesture:
 		n = "手势签到"
-	case SignLocation:
+	case SignTypeLocation:
 		n = "位置签到"
-	case SignCode:
+	case SignTypeCode:
 		n = "签到码签到"
 	}
 	return n
@@ -39,15 +39,15 @@ func GetSignTypeName(signType SignType) string {
 func GetSignTypeKey(signType SignType) string {
 	var k string
 	switch signType {
-	case SignNormal:
+	case SignTypeNormal:
 		k = config.SignNormal
-	case SignPhoto:
+	case SignTypePhoto:
 		k = config.SignPhoto
-	case SignGesture:
+	case SignTypeGesture:
 		k = config.SignGesture
-	case SignLocation:
+	case SignTypeLocation:
 		k = config.SignLocation
-	case SignCode:
+	case SignTypeCode:
 		k = config.SignCode
 	}
 	return k
@@ -57,5 +57,5 @@ func GetSignType(typ int8) SignType {
 	if typ >= 0 && typ < SignTypeLength {
 		return typ
 	}
-	return SignUnknown
+	return SignTypeUnknown
 }

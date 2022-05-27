@@ -1,6 +1,8 @@
 package core
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetSignTypeName(t *testing.T) {
 	for i := int8(0); i < SignTypeLength; i++ {
@@ -14,7 +16,7 @@ func TestGetSignTypeName(t *testing.T) {
 
 func TestGetSignTypeKey(t *testing.T) {
 	for i := int8(0); i < SignTypeLength; i++ {
-		if i == SignQR {
+		if i == SignTypeQR {
 			continue
 		}
 		key := GetSignTypeKey(i)

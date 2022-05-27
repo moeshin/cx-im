@@ -11,6 +11,7 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type Work struct {
@@ -150,6 +151,7 @@ func (w *Work) OnMessage(msg []byte) {
 }
 
 func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
+	startTime := time.Now().UnixMilli()
 	b, err := buf.ReadE()
 	if err != nil {
 		return err
@@ -322,10 +324,10 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 
 	signType := GetSignType(int8(GodJObjectI(active, "otherId", -1.)))
 	log.Println(signType, GetSignTypeName(signType))
-	if signType == SignNormal {
+	if signType == SignTypeNormal {
 		photo := GodJObjectI(active, "otherId", 0.)
 		if photo != 0 {
-			signType = SignPhoto
+			signType = SignTypePhoto
 		}
 	}
 
@@ -333,12 +335,17 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		return nil
 	}
 
+	taskTime := int64(GodJObjectI(active, "starttime", 0.))
+	log.Println("任务时间：", taskTime)
+
 	signOptions := work.Opts
 	switch signType {
-	case SignPhoto:
-		// TODO Upload image
+	case SignTypePhoto:
+		imageId := work.GetImageId(time.UnixMilli(taskTime), w.Client)
+		signOptions.ImageId = imageId
+		log.Println("预览：", config.GetSignPhotoImageUrl(imageId, false))
 		break
-	case SignLocation:
+	case SignTypeLocation:
 		if GodJObjectI(active, "ifopenAddress", 0.) != 0 {
 			signOptions.Address = GodJObjectI(active, "locationText", config.DefaultSignAddress)
 			signOptions.Longitude = GodJObjectI(active, "locationLongitude", config.DefaultSignLongitude)
@@ -352,6 +359,34 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 			)
 		}
 	}
-	// TODO
+
+	log.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
+	takeTime := time.Now().UnixMilli() - taskTime
+	log.Println("签到已发布：", takeTime)
+	delayTime := int64(config.GodRI(courseConfig, config.SignDelay, 0.))
+	log.Printf("用户配置延迟签到：%d\n", delayTime)
+	if delayTime > 0 {
+		delay := delayTime*1000 - takeTime
+		if delay > 0 {
+			log.Printf("将等待：%dms", delay)
+			time.Sleep(time.Duration(delay))
+		}
+	}
+
+	log.Println("开始签到")
+	content, err := w.Client.Sign(activeId, signOptions)
+	if err != nil {
+		return err
+	}
+	switch content {
+	case "success":
+		content = "签到完成"
+	case "您已签到过了":
+	default:
+		log.Println("签到失败：", content)
+		return nil
+	}
+	log.Println(content)
+	// TODO 通知
 	return nil
 }
