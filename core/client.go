@@ -31,17 +31,9 @@ type CxClient struct {
 }
 
 var (
-	regexpCourses,
-	regexpImToken,
-	_ *regexp.Regexp
+	regexpCourses = regexp.MustCompile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
+	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
 )
-
-func init() {
-	var err error
-	regexpCourses, err = regexp.Compile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
-	regexpImToken, err = regexp.Compile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
-	errs.Panic(err)
-}
 
 func NewClient(username, password, fid string) (*CxClient, error) {
 	jar, err := cookiejar.New(nil)
