@@ -375,7 +375,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		delay := delayTime*1000 - takeTime
 		if delay > 0 {
 			log.Printf("将等待：%dms", delay)
-			time.Sleep(time.Duration(delay))
+			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
 	}
 
