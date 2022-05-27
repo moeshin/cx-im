@@ -5,6 +5,7 @@ import (
 	"cx-im/core"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
 )
 
@@ -28,15 +29,16 @@ var workCmd = &cobra.Command{
 		}
 		userConfig := appConfig.GetUserConfig(username)
 		if userConfig.New {
+			log.Println("无该账号配置，请初始化")
+			errs.Panic(initCmd.Help())
+			os.Exit(1)
 			return
 		}
 		if def == "" {
 			appConfig.SetDefaultUsername(username)
 			errs.Print(appConfig.Save())
 		}
-		work := &core.Work{
-			Config: userConfig,
-		}
+		work := core.NewWork(userConfig, nil)
 		errs.Panic(work.Connect())
 	},
 }

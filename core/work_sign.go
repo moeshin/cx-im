@@ -15,13 +15,15 @@ type WorkSign struct {
 	Type SignType
 	Cfg  *config.Config
 	Opts *model.SignOptions
+	Log  *LogE
 }
 
-func NewWorkSign(cfg *config.Config) *WorkSign {
+func NewWorkSign(cfg *config.Config, logE *LogE) *WorkSign {
 	return &WorkSign{
 		SignTypeUnknown,
 		cfg,
 		nil,
+		logE,
 	}
 }
 
@@ -85,7 +87,7 @@ func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 	path := w.GetImagePath(tm)
 	var err error
 	if client == nil {
-		client, err = NewClientFromConfig(w.Cfg.Parent)
+		client, err = NewClientFromConfig(w.Cfg.Parent, w.Log)
 	}
 	if err == nil {
 		id, err := client.UploadImage(path)

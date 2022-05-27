@@ -28,6 +28,7 @@ type CxClient struct {
 	Uid      string
 	Logged   bool
 	Client   *http.Client
+	Log      *LogE
 }
 
 var (
@@ -35,20 +36,21 @@ var (
 	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
 )
 
-func NewClient(username, password, fid string) (*CxClient, error) {
+func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
 	}
-	var transport *http.Transport
 	// 抓包调试
 	//proxy, err := url.Parse("http://127.0.0.1:8888")
 	//if err != nil {
 	//	return nil, err
 	//}
-	//transport = &http.Transport{
-	//	Proxy: http.ProxyURL(proxy),
-	//}
+	if logE == nil {
+		logE = &LogE{
+			Logger: log.Default(),
+		}
+	}
 	return &CxClient{
 		username,
 		password,
@@ -56,13 +58,16 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 		"",
 		false,
 		&http.Client{
-			Transport: transport,
-			Jar:       jar,
+			Transport: &http.Transport{
+				//Proxy: http.ProxyURL(proxy),
+			},
+			Jar: jar,
 		},
+		logE,
 	}, nil
 }
 
-func NewClientFromConfig(cfg *config.Config) (*CxClient, error) {
+func NewClientFromConfig(cfg *config.Config, logE *LogE) (*CxClient, error) {
 	var username, password, fid string
 	v, ok := cfg.Data.Get(config.Username)
 	if ok {
@@ -82,7 +87,7 @@ func NewClientFromConfig(cfg *config.Config) (*CxClient, error) {
 	if ok {
 		fid, ok = v.(string)
 	}
-	return NewClient(username, password, fid)
+	return NewClient(username, password, fid, logE)
 }
 
 func (c *CxClient) Login() error {

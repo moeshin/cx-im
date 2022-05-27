@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"github.com/moeshin/go-errs"
+	"io"
 	"log"
 	"reflect"
 	"strconv"
@@ -19,10 +19,27 @@ type Work struct {
 	Client *CxClient
 	Conn   *websocket.Conn
 	Done   chan struct{}
+	Log    *LogE
+	User   string
+}
+
+func NewWork(cfg *config.Config, writer io.Writer) *Work {
+	var logger *log.Logger
+	if writer == nil {
+		logger = log.Default()
+	} else {
+		logger = NewLogger(writer, "")
+	}
+	return &Work{
+		Config: cfg,
+		Log: &LogE{
+			Logger: logger,
+		},
+	}
 }
 
 func (w *Work) Connect() error {
-	client, err := NewClientFromConfig(w.Config)
+	client, err := NewClientFromConfig(w.Config, w.Log)
 	if err != nil {
 		return err
 	}
@@ -32,7 +49,7 @@ func (w *Work) Connect() error {
 		return err
 	}
 	url := im.GetUrl()
-	log.Println("IM 连接：" + url)
+	w.Log.Println("IM 连接：" + url)
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return err
@@ -43,10 +60,10 @@ func (w *Work) Connect() error {
 		defer close(w.Done)
 		for {
 			typ, msg, err := w.Conn.ReadMessage()
-			if errs.Print(err) {
+			if w.Log.ErrPrint(err) {
 				return
 			}
-			w.OnMsg(typ, msg)
+			w.onMsg(typ, msg)
 		}
 	}()
 
@@ -69,24 +86,25 @@ func (w *Work) Connect() error {
 }
 
 func (w *Work) Send(data []byte) error {
-	log.Println("IM 发送消息", len(data), ":", string(data))
+	w.Log.Println("IM 发送消息", len(data), ":", string(data))
 	return w.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
-func (w *Work) OnMsg(typ int, msg []byte) {
+func (w *Work) onMsg(typ int, msg []byte) {
+	startTime := time.Now().UnixMilli()
 	length := len(msg)
 	if typ == websocket.TextMessage && length == 1 && msg[0] == 'h' {
 		// TODO 心跳包
 	} else {
-		log.Println("IM 接收到消息", typ, length, ":", string(msg))
+		w.Log.Println("IM 接收到消息", typ, length, ":", string(msg))
 	}
 	if length == 1 && msg[0] == 'o' {
-		log.Println("IM 登录")
+		w.Log.Println("IM 登录")
 		uid, token, err := w.Client.GetImToken()
-		if errs.Print(err) {
+		if w.Log.ErrPrint(err) {
 			return
 		}
-		errs.Print(w.Send(im.BuildLoginMsg(uid, token)))
+		w.Log.ErrPrint(w.Send(im.BuildLoginMsg(uid, token)))
 		return
 	}
 	if length == 0 || msg[0] != 'a' {
@@ -95,19 +113,19 @@ func (w *Work) OnMsg(typ int, msg []byte) {
 	msg = msg[1:]
 	var messages []string
 	err := json.Unmarshal(msg, &messages)
-	if errs.Print(err) {
+	if w.Log.ErrPrint(err) {
 		return
 	}
 	for _, message := range messages {
 		msg, err = base64.StdEncoding.DecodeString(message)
-		if errs.Print(err) {
+		if w.Log.ErrPrint(err) {
 			continue
 		}
-		w.OnMessage(msg)
+		w.onMessage(msg, startTime)
 	}
 }
 
-func (w *Work) OnMessage(msg []byte) {
+func (w *Work) onMessage(msg []byte, startTime int64) {
 	length := len(msg)
 	if length < 6 {
 		return
@@ -117,14 +135,14 @@ func (w *Work) OnMessage(msg []byte) {
 	if reflect.DeepEqual(header, im.MsgHeaderCourse) {
 		chatId := im.GetChatId(msg)
 		if chatId == "" {
-			log.Println("IM 不是课程消息")
+			w.Log.Println("IM 不是课程消息")
 			return
 		}
-		log.Println("IM 接收到课程消息，并请求获取活动信息：" + chatId)
+		w.Log.Println("IM 接收到课程消息，并请求获取活动信息：" + chatId)
 		msg[3] = 0x00
 		msg[6] = 0x1a
 		msg = append(msg, 0x58, 0x00)
-		errs.Print(w.Send(im.BuildMsg(msg)))
+		w.Log.ErrPrint(w.Send(im.BuildMsg(msg)))
 		return
 	}
 	if !reflect.DeepEqual(header, im.MsgHeaderActive) {
@@ -143,25 +161,24 @@ func (w *Work) OnMessage(msg []byte) {
 	for {
 		end := sessionEnd
 		buf.Pos = sessionEnd
-		errs.Print(w.onSession(buf, &sessionEnd, chatId))
+		w.onSession(buf, &sessionEnd, chatId, startTime)
 		if sessionEnd == end {
 			break
 		}
 	}
 }
 
-func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
-	startTime := time.Now().UnixMilli()
+func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime int64) {
 	b, err := buf.ReadE()
-	if err != nil {
-		return err
+	if w.Log.ErrPrint(err) {
+		return
 	}
 	if b != 0x22 {
-		return nil
+		return
 	}
 	i, err := buf.ReadEnd2()
-	if err != nil {
-		return err
+	if w.Log.ErrPrint(err) {
+		return
 	}
 	*sessionEnd = i
 	exit := false
@@ -169,35 +186,39 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		exit = true
 	} else {
 		i, err := buf.ReadE()
-		if err != nil {
-			return err
+		if w.Log.ErrPrint(err) {
+			return
 		}
 		if i != 0x08 {
 			exit = true
 		}
 	}
 	if exit {
-		log.Println("IM 解析 Session 失败")
-		return nil
+		w.Log.Println("IM 解析 Session 失败")
+		return
 	}
-	log.Println("IM 释放 Session")
+	w.Log.Println("IM 释放 Session")
 	end := buf.Pos + 9
-	errs.Print(w.Send(im.BuildReleaseSessionMsg(
+	w.Log.ErrPrint(w.Send(im.BuildReleaseSessionMsg(
 		chatId,
 		buf.Buf[buf.Pos:end],
 	)))
+
+	logN := w.Log.NewLogN()
+	defer w.Log.ErrClose(logN)
+	logN.Println("IM chatId:", chatId)
 
 	buf = im.NewBuf(buf.Buf[buf.Pos+1:])
 	att, err := buf.ReadAttachment()
 	if att == nil {
 		i = im.IndexSlice(buf.Buf, cmd_course_chat_feedback.BytesCmd)
 		if i == -1 {
-			log.Println("IM 解析失败，无法获取 attachment")
-			return err
+			logN.Println("IM 解析失败，无法获取 attachment")
+			logN.ErrPrint(err)
 		}
 		state, err := cmd_course_chat_feedback.GetState(buf)
 		var s string
-		if errs.Print(err) {
+		if logN.ErrPrint(err) {
 			s = "未知状态"
 		} else if state {
 			s = "开启"
@@ -206,13 +227,13 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		}
 		courseConfig := w.Config.GetCourseConfig(chatId)
 		courseName := config.GodCI(courseConfig, config.CourseName, "")
-		log.Printf("IM 收到来自《%s》的群聊：%s\n", courseName, s)
+		logN.Printf("IM 收到来自《%s》的群聊：%s\n", courseName, s)
 		activeId, err := cmd_course_chat_feedback.GetActiveId(buf)
-		if err != nil {
-			return err
+		if w.Log.ErrPrint(err) {
+			return
 		}
-		log.Println("IM activeId:", activeId)
-		return nil
+		logN.Println("IM activeId:", activeId)
+		return
 	}
 	attType := GodJObjectI(att, "attachmentType", 0.)
 	if attType == 1 {
@@ -226,39 +247,39 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 			courseConfig := w.Config.GetCourseConfig(chatId)
 			courseName = config.GodCI(courseConfig, config.CourseName, "")
 		}
-		log.Printf("IM 收到来自《%s》的主题讨论：%s\n", courseName, title)
-		return nil
+		logN.Printf("IM 收到来自《%s》的主题讨论：%s\n", courseName, title)
+		return
 	}
 	if attType != 15 {
-		log.Println("IM 解析失败，attachmentType != 15")
-		log.Printf("attr: %#v\n", att)
-		return nil
+		logN.Println("IM 解析失败，attachmentType != 15")
+		logN.Printf("attr: %#v\n", att)
+		return
 	}
 
 	attCourse, ok := GodJObject(att, "att_chat_course", map[string]any{})
 	if !ok {
-		log.Println("IM 解析失败，无法获取 att_chat_course")
-		log.Printf("attr: %#v\n", att)
-		return nil
+		logN.Println("IM 解析失败，无法获取 att_chat_course")
+		logN.Printf("attr: %#v\n", att)
+		return
 	}
 
 	activeId := strconv.FormatInt(int64(GodJObjectI(attCourse, "aid", 0.)), 10)
 	if activeId == "0" {
-		log.Println("IM 解析失败，无法获取 aid")
-		log.Printf("attr: %#v\n", att)
-		return nil
+		logN.Println("IM 解析失败，无法获取 aid")
+		logN.Printf("attr: %#v\n", att)
+		return
 	}
-	log.Println("IM activeId:", activeId)
+	logN.Println("IM activeId:", activeId)
 
 	courseInfo, ok := GodJObject(attCourse, "courseInfo", map[string]any{})
 	if !ok {
-		log.Println("IM 解析失败，无法获取 courseInfo")
-		log.Printf("attr: %#v\n", att)
-		return nil
+		logN.Println("IM 解析失败，无法获取 courseInfo")
+		logN.Printf("attr: %#v\n", att)
+		return
 	}
 
 	aType := GodJObjectI(attCourse, "atype", -1.)
-	log.Println("IM aType:", aType)
+	logN.Println("IM aType:", aType)
 	courseName := GodJObjectI(courseInfo, "coursename", "")
 
 	{
@@ -271,7 +292,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 				name += "活动"
 			}
 		}
-		log.Printf("IM 收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
+		logN.Printf("IM 收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
 	}
 
 	attActiveType := GodJObjectI(attCourse, "activeType", 0.)
@@ -295,35 +316,35 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 
 		type: 4: 直播
 		*/
-		log.Println("IM 接收到的不是签到活动")
-		log.Printf("attr: %#v\n", att)
-		return nil
+		logN.Println("IM 接收到的不是签到活动")
+		logN.Printf("attr: %#v\n", att)
+		return
 	}
 
 	courseConfig := w.Config.GetCourseConfig(chatId)
 	if courseConfig.New {
-		log.Println("该课程不在配置列表")
+		logN.Println("该课程不在配置列表")
 		courseConfig.Data.Set(config.ChatId, chatId)
 		courseConfig.Data.Set(config.CourseName, courseName)
 		courseConfig.Data.Set(config.CourseId, GodJObjectI(courseInfo, "courseid", ""))
 		courseConfig.Data.Set(config.ClassId, GodJObjectI(courseInfo, "classid", ""))
-		errs.Print(courseConfig.Save())
+		logN.ErrPrint(courseConfig.Save())
 	}
 
-	work := NewWorkSign(courseConfig)
+	work := NewWorkSign(courseConfig, logN.LogE)
 	active, err := w.Client.GetActiveDetail(activeId)
-	if err != nil {
-		return err
+	if logN.ErrPrint(err) {
+		return
 	}
 
 	activeType := GodJObjectI(active, "activeType", -1.)
 	if activeType != 2 {
-		log.Println("不是签到活动，activeType:", activeType)
-		return nil
+		logN.Println("不是签到活动，activeType:", activeType)
+		return
 	}
 
 	signType := GetSignType(int8(GodJObjectI(active, "otherId", -1.)))
-	log.Println(signType, GetSignTypeName(signType))
+	logN.Println(signType, GetSignTypeName(signType))
 	if signType == SignTypeNormal {
 		photo := GodJObjectI(active, "otherId", 0.)
 		if photo != 0 {
@@ -332,25 +353,25 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 	}
 
 	if work.SetSignType(signType, active) || work.IsSkip() {
-		return nil
+		return
 	}
 
 	taskTime := int64(GodJObjectI(active, "starttime", 0.))
-	log.Println("任务时间：", taskTime)
+	logN.Println("任务时间：", taskTime)
 
 	signOptions := work.Opts
 	switch signType {
 	case SignTypePhoto:
 		imageId := work.GetImageId(time.UnixMilli(taskTime), w.Client)
 		signOptions.ImageId = imageId
-		log.Println("预览：", config.GetSignPhotoImageUrl(imageId, false))
+		logN.Println("预览：", config.GetSignPhotoImageUrl(imageId, false))
 		break
 	case SignTypeLocation:
 		if GodJObjectI(active, "ifopenAddress", 0.) != 0 {
 			signOptions.Address = GodJObjectI(active, "locationText", config.DefaultSignAddress)
 			signOptions.Longitude = GodJObjectI(active, "locationLongitude", config.DefaultSignLongitude)
 			signOptions.Latitude = GodJObjectI(active, "locationLatitude", config.DefaultSignLatitude)
-			log.Printf(
+			logN.Printf(
 				"教师指定签到地点：%s (%s, %s) ~%s 米\n",
 				signOptions.Address,
 				signOptions.Longitude,
@@ -360,39 +381,38 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		}
 	}
 
-	log.Println("准备签到中……")
+	logN.Println("准备签到中……")
 	err = w.Client.PreSign(activeId)
 	if err != nil {
-		log.Println(err)
+		logN.Println(err)
 	}
 
-	log.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
+	logN.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
 	takeTime := time.Now().UnixMilli() - taskTime
-	log.Println("签到已发布：", takeTime)
+	logN.Println("签到已发布：", takeTime)
 	delayTime := int64(config.GodRI(courseConfig, config.SignDelay, 0.))
-	log.Printf("用户配置延迟签到：%d\n", delayTime)
+	logN.Printf("用户配置延迟签到：%d\n", delayTime)
 	if delayTime > 0 {
 		delay := delayTime*1000 - takeTime
 		if delay > 0 {
-			log.Printf("将等待：%dms", delay)
+			logN.Printf("将等待：%dms", delay)
 			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
 	}
 
-	log.Println("开始签到")
+	logN.Println("开始签到")
 	content, err := w.Client.Sign(activeId, signOptions)
-	if err != nil {
-		return err
+	if logN.ErrPrint(err) {
+		return
 	}
 	switch content {
 	case "success":
 		content = "签到完成"
 	case "您已签到过了":
 	default:
-		log.Println("签到失败：", content)
-		return nil
+		logN.Println("签到失败：", content)
+		return
 	}
-	log.Println(content)
-	// TODO 通知
-	return nil
+	logN.Println(content)
+	return
 }
