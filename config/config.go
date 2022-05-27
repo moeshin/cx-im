@@ -1,7 +1,7 @@
 package config
 
 import (
-	"cx-im/models"
+	"cx-im/model"
 	"encoding/json"
 	"github.com/iancoleman/orderedmap"
 	"github.com/moeshin/go-errs"
@@ -148,11 +148,11 @@ func (c *Config) GetCourseConfig(chatId string) *Config {
 	}
 }
 
-func (c *Config) GetSignOptions(signTypeKey string) *models.SignOptions {
+func (c *Config) GetSignOptions(signTypeKey string) *model.SignOptions {
 	if !GodRI(c, signTypeKey, false) {
 		return nil
 	}
-	return &models.SignOptions{
+	return &model.SignOptions{
 		Address:   GodRI(c, SignAddress, DefaultSignAddress),
 		Longitude: GodRI(c, SignLongitude, DefaultSignLongitude),
 		Latitude:  GodRI(c, SignLatitude, DefaultSignLatitude),

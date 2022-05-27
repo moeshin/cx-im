@@ -2,14 +2,14 @@ package core
 
 import (
 	"cx-im/config"
-	"cx-im/models"
+	"cx-im/model"
 	"log"
 )
 
 type WorkSign struct {
 	Type SignType
 	Cfg  *config.Config
-	Opts *models.SignOptions
+	Opts *model.SignOptions
 }
 
 func NewWorkSign(cfg *config.Config) *WorkSign {

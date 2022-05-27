@@ -1,15 +1,22 @@
 package core
 
 import (
+	"bytes"
 	"cx-im/config"
+	"cx-im/model"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/moeshin/go-errs"
+	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
+	"path"
 	"regexp"
 	"strconv"
 )
@@ -41,6 +48,10 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	//proxy, err := url.Parse("http://127.0.0.1:8888")
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &CxClient{
 		username,
 		password,
@@ -48,6 +59,9 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 		"",
 		false,
 		&http.Client{
+			//Transport: &http.Transport{
+			//	Proxy: http.ProxyURL(proxy),
+			//},
 			Jar: jar,
 		},
 	}, nil
@@ -214,11 +228,126 @@ func (c *CxClient) GetActiveDetail(activeId string) (JObject, error) {
 	return parseCxClientJson(resp)
 }
 
+func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string, error) {
+	query := url.Values{
+		"activeId":  []string{activeId},
+		"appType":   []string{"15"},
+		"ifTiJiao":  []string{"1"},
+		"address":   []string{signOptions.Address},
+		"longitude": []string{signOptions.Longitude},
+		"latitude":  []string{signOptions.Latitude},
+		"clientip":  []string{signOptions.Ip},
+		"objectId":  []string{signOptions.ImageId},
+	}
+	resp, err := c.Client.Get("https://mobilelearn.chaoxing.com/pptSign/stuSignajax?" + query.Encode())
+	if err != nil {
+		return "", err
+	}
+	defer errs.CloseResponse(resp)
+	err = testCxClientStatus(resp)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (c *CxClient) GetImageHostingToken() (string, error) {
+	resp, err := c.Client.Get("https://pan-yz.chaoxing.com/api/token/uservalid")
+	defer errs.CloseResponse(resp)
+	err = testCxClientStatus(resp)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var v JsonImageHostingToken
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return "", err
+	}
+	if !v.Result {
+		return "", errors.New("获取 Token 失败")
+	}
+	return v.Token, nil
+}
+
+func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, error) {
+	token, err := c.GetImageHostingToken()
+	if err != nil {
+		return "", nil, err
+	}
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	if err != nil {
+		return "", nil, err
+	}
+	defer errs.Close(writer)
+	err = writer.WriteField("puid", c.Uid)
+	if err != nil {
+		errs.Close(writer)
+		return "", nil, err
+	}
+	err = writer.WriteField("_token", token)
+	if err != nil {
+		return "", nil, err
+	}
+	fw, err := writer.CreateFormFile("file", "image"+path.Ext(filename))
+	if err != nil {
+		return "", nil, err
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", nil, err
+	}
+	defer errs.Close(file)
+	_, err = io.Copy(fw, file)
+	if err != nil {
+		return "", nil, err
+	}
+	return writer.FormDataContentType(), body, nil
+}
+
+func (c *CxClient) UploadImage(filename string) (string, error) {
+	contentType, body, err := c.buildUploadImageBody(filename)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.Client.Post("https://pan-yz.chaoxing.com/upload", contentType, body)
+	if err != nil {
+		return "", err
+	}
+	defer errs.CloseResponse(resp)
+	err = testCxClientStatus(resp)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	log.Println("data", string(data))
+	if err != nil {
+		return "", err
+	}
+	var v JsonUpload
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return "", err
+	}
+	if !v.Result {
+		return "", errors.New(v.Msg)
+	}
+	return v.ObjectId, nil
+}
+
 func testCxClientStatus(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
 	}
-	return errors.New("响应状态非 200 OK")
+	return fmt.Errorf("响应状态非 200 OK： %s", resp.Status)
 }
 
 type JsonCxClient struct {
