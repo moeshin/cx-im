@@ -360,6 +360,12 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string) error {
 		}
 	}
 
+	log.Println("准备签到中……")
+	err = w.Client.PreSign(activeId)
+	if err != nil {
+		log.Println(err)
+	}
+
 	log.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
 	takeTime := time.Now().UnixMilli() - taskTime
 	log.Println("签到已发布：", takeTime)

@@ -40,9 +40,14 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	var transport *http.Transport
+	// 抓包调试
 	//proxy, err := url.Parse("http://127.0.0.1:8888")
 	//if err != nil {
 	//	return nil, err
+	//}
+	//transport = &http.Transport{
+	//	Proxy: http.ProxyURL(proxy),
 	//}
 	return &CxClient{
 		username,
@@ -51,10 +56,8 @@ func NewClient(username, password, fid string) (*CxClient, error) {
 		"",
 		false,
 		&http.Client{
-			//Transport: &http.Transport{
-			//	Proxy: http.ProxyURL(proxy),
-			//},
-			Jar: jar,
+			Transport: transport,
+			Jar:       jar,
 		},
 	}, nil
 }
@@ -218,6 +221,18 @@ func (c *CxClient) GetActiveDetail(activeId string) (JObject, error) {
 		return nil, err
 	}
 	return parseCxClientJson(resp)
+}
+
+func (c *CxClient) PreSign(activeId string) error {
+	query := url.Values{
+		"activePrimaryId": []string{activeId},
+	}
+	resp, err := c.Client.Get("https://mobilelearn.chaoxing.com/newsign/preSign?" + query.Encode())
+	if err != nil {
+		return err
+	}
+	defer errs.CloseResponse(resp)
+	return testCxClientStatus(resp)
 }
 
 func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string, error) {
