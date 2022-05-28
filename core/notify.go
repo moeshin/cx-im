@@ -8,13 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/moeshin/go-errs"
+	mail "github.com/xhit/go-simple-mail/v2"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-const NotifyTitle = "cx-im 通知："
+const NotifyTitle = "cx-im 通知"
 
 type NotifyState = int
 
@@ -54,7 +55,73 @@ func (l *LogE) NewLogN(cfg *config.Config) *LogN {
 	}
 }
 
-func NotifyPushPlus(token string, title string, content string) error {
+func (l *LogN) getCfgString(name string, key string) (string, bool) {
+	s := config.GodRI(l.Cfg, key, "")
+	b := s == ""
+	if b {
+		l.Printf("由于 %s 为空，没有发送 %s 通知", key, name)
+	}
+	return s, b
+}
+
+func NotifyEmail(title string, content string,
+	email string, host string, port int, username string, password string, ssl bool) error {
+	m := mail.NewMSG()
+	m.SetFrom(fmt.Sprintf("%s <%s>", NotifyTitle, username)).
+		AddTo(email).
+		SetSubject(title).
+		SetBody(mail.TextPlain, content)
+	if m.Error != nil {
+		return m.Error
+	}
+	server := mail.NewSMTPClient()
+	server.Host = host
+	server.Port = port
+	server.Username = username
+	server.Password = password
+	if ssl {
+		server.Encryption = mail.EncryptionSSLTLS
+		//server.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	client, err := server.Connect()
+	if err != nil {
+		return err
+	}
+	err = m.Send(client)
+	return err
+}
+
+func (l *LogN) NotifyEmail(content string) {
+	name := "邮件"
+	email, b := l.getCfgString(name, config.Email)
+	if b {
+		return
+	}
+	host, b := l.getCfgString(name, config.SmtpHost)
+	if b {
+		return
+	}
+	username, b := l.getCfgString(name, config.Username)
+	if b {
+		return
+	}
+	password, b := l.getCfgString(name, config.SmtpPassword)
+	if b {
+		return
+	}
+	port := int(config.GodRI(l.Cfg, config.SmtpPort, 465.))
+	ssl := config.GodRI(l.Cfg, config.SmtpSSL, true)
+	l.Println("正在发送 %s 通知", name)
+	err := NotifyEmail(l.title, content, email, host, port, username, password, ssl)
+	if err == nil {
+		l.Printf("已发送 %s 通知", name)
+	} else {
+		l.Printf("发送 %s 通知失败！", name)
+		l.ErrPrint(err)
+	}
+}
+
+func NotifyPushPlus(title string, content string, token string) error {
 	data, err := json.Marshal(map[string]string{
 		"token":    token,
 		"title":    title,
@@ -89,17 +156,18 @@ func NotifyPushPlus(token string, title string, content string) error {
 }
 
 func (l *LogN) NotifyPushPlus(content string) {
-	token := config.GodRI(l.Cfg, config.PushPlusToken, "")
-	if token == "" {
-		l.Printf("由于 %s 为空，没有发送 PushPlus 通知\n", config.PushPlusToken)
+	name := "PushPlus"
+	token, b := l.getCfgString(name, config.PushPlusToken)
+	if b {
 		return
 	}
-	l.Println("正在发送 PushPlus 通知")
-	err := NotifyPushPlus(token, l.title, content)
+	l.Println("正在发送 %s 通知", name)
+	err := NotifyPushPlus(l.title, content, token)
 	if err == nil {
-		l.Println("已发送 PushPlus 通知")
+		l.Printf("已发送 %s 通知", name)
 	} else {
-		l.Println("发送 PushPlus 通知失败！", err)
+		l.Printf("发送 %s 通知失败！", name)
+		l.ErrPrint(err)
 	}
 }
 
@@ -118,7 +186,10 @@ func (l *LogN) Notify() error {
 				s += "✖"
 			}
 		}
-		l.title = NotifyTitle + s
+		if s != "" {
+			s = NotifyTitle + "：" + s
+		}
+		l.title = s
 	}
 	data, err := ioutil.ReadAll(l.Writer.Buffer)
 	if err != nil {
@@ -127,6 +198,7 @@ func (l *LogN) Notify() error {
 	content := string(data)
 
 	l.NotifyPushPlus(content)
+	l.NotifyEmail(content)
 	return nil
 }
 

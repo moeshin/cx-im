@@ -391,7 +391,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 
 	logN.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
 	takeTime := time.Now().UnixMilli() - taskTime
-	logN.Println("签到已发布：", takeTime)
+	logN.Printf("签到已发布：%dms\n", takeTime)
 	delayTime := int64(config.GodRI(courseConfig, config.SignDelay, 0.))
 	logN.Printf("用户配置延迟签到：%d\n", delayTime)
 	if delayTime > 0 {
