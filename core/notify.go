@@ -11,7 +11,6 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"time"
 )
 
@@ -131,7 +130,7 @@ func NotifyPushPlus(title string, content string, token string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post("https://www.pushplus.plus/send", "application/json", bytes.NewReader(data))
+	resp, err := HttpClient.Post("https://www.pushplus.plus/send", MimeJson, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -171,6 +170,63 @@ func (l *LogN) NotifyPushPlus(content string) {
 	}
 }
 
+func NotifyTelegramBot(title string, content string, token string, chatId string) error {
+	text := title + "\n" + content
+	data, err := json.Marshal(map[string]string{
+		"chat_id": chatId,
+		"text":    text,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := HttpClient.Post(
+		fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token),
+		MimeJson,
+		bytes.NewReader(data),
+	)
+	if err != nil {
+		return err
+	}
+	defer errs.CloseResponse(resp)
+	err = testResponseStatus(resp)
+	if err != nil {
+		return err
+	}
+	data, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var v JObject
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
+	if !GodJObjectI(v, "ok", false) {
+		return errors.New(string(data))
+	}
+	return nil
+}
+
+func (l *LogN) NotifyTelegramBot(content string) {
+	name := "Telegram Bot"
+	token, b := l.getCfgString(name, config.TelegramBotToken)
+	if b {
+		return
+	}
+	chatId, b := l.getCfgString(name, config.TelegramBotChatId)
+	if b {
+		return
+	}
+	l.Println("正在发送 %s 通知", name)
+	err := NotifyTelegramBot(l.title, content, token, chatId)
+	if err == nil {
+		l.Printf("已发送 %s 通知", name)
+	} else {
+		l.Printf("发送 %s 通知失败！", name)
+		l.ErrPrint(err)
+	}
+}
+
 func (l *LogN) Notify() error {
 	l.Writer.Skip = true
 	{
@@ -199,6 +255,7 @@ func (l *LogN) Notify() error {
 
 	l.NotifyPushPlus(content)
 	l.NotifyEmail(content)
+	l.NotifyTelegramBot(content)
 	return nil
 }
 

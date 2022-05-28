@@ -40,11 +40,6 @@ func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 抓包调试
-	//proxy, err := url.Parse("http://127.0.0.1:8888")
-	//if err != nil {
-	//	return nil, err
-	//}
 	if logE == nil {
 		logE = &LogE{
 			Logger: log.Default(),
@@ -57,10 +52,8 @@ func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
 		"",
 		false,
 		&http.Client{
-			Transport: &http.Transport{
-				//Proxy: http.ProxyURL(proxy),
-			},
-			Jar: jar,
+			Transport: HttpTransport,
+			Jar:       jar,
 		},
 		logE,
 	}, nil
@@ -386,3 +379,19 @@ func parseCxClientJson(resp *http.Response) (JObject, error) {
 	}
 	return nil, errors.New(msg)
 }
+
+var HttpTransport = (func() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// 抓包调试
+	//proxy, err := url.Parse("http://127.0.0.1:8888")
+	//if !errs.Print(err) {
+	//	transport.Proxy = http.ProxyURL(proxy)
+	//}
+	return transport
+})()
+
+var HttpClient = &http.Client{
+	Transport: HttpTransport,
+}
+
+const MimeJson = "application/json"
