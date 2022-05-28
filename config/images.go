@@ -11,6 +11,7 @@ import (
 )
 
 const ImageDir = "Images"
+const TimeLayout = "2006-01-02 15:04:05"
 
 var ImageExt = (func() map[string]bool {
 	set := map[string]bool{}

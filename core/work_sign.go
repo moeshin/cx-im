@@ -20,7 +20,7 @@ type WorkSign struct {
 func NewWorkSign(cfg *config.Config, logE *LogE) *WorkSign {
 	return &WorkSign{
 		SignTypeUnknown,
-		cfg,
+		cfg, // CourseConfig
 		nil,
 		logE,
 	}

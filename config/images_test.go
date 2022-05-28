@@ -7,9 +7,8 @@ import (
 
 func TestMatchSignPhotoKey(t *testing.T) {
 	var tm time.Time
-	const layout = "2006-01-02 15:04:05"
 	test := func(expected bool, key string) {
-		t.Log(expected, tm.Format(layout), "|", key)
+		t.Log(expected, tm.Format(TimeLayout), "|", key)
 		actual := MatchSignPhotoKey(tm, key)
 		eq := expected == actual
 		t.Log(eq, actual)
