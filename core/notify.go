@@ -11,6 +11,7 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"time"
 )
 
@@ -81,7 +82,7 @@ func (l *LogN) getCfgStrings(name string, keys []string, vales []*string) bool {
 }
 
 func (l *LogN) Notifying(name string, fn func() error) {
-	l.Println("正在发送 %s 通知", name)
+	l.Printf("正在发送 %s 通知", name)
 	err := fn()
 	if err == nil {
 		l.Printf("已发送 %s 通知", name)
@@ -236,6 +237,51 @@ func (l *LogN) NotifyTelegramBot(content string) {
 	})
 }
 
+func NotifyBark(title string, content string, api string) error {
+	resp, err := HttpClient.PostForm(api, url.Values{
+		"title": []string{title},
+		"body":  []string{content},
+		"group": []string{NotifyTitle},
+		"level": []string{"timeSensitive"},
+	})
+	if err != nil {
+		return err
+	}
+	defer errs.CloseResponse(resp)
+	err = testResponseStatus(resp)
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var v JObject
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
+	if GodJObjectI(v, "code", 0.) != 200 {
+		msg := GodJObjectI(v, "message", "")
+		if msg == "" {
+			msg = string(data)
+		}
+		return errors.New(msg)
+	}
+	return nil
+}
+
+func (l *LogN) NotifyBark(content string) {
+	const name = "Bark"
+	api, b := l.getCfgString(name, config.BarkApi)
+	if b {
+		return
+	}
+	l.Notifying(name, func() error {
+		return NotifyBark(l.title, content, api)
+	})
+}
+
 func (l *LogN) Notify() error {
 	l.Writer.Skip = true
 	{
@@ -265,6 +311,7 @@ func (l *LogN) Notify() error {
 	l.NotifyPushPlus(content)
 	l.NotifyEmail(content)
 	l.NotifyTelegramBot(content)
+	l.NotifyBark(content)
 	return nil
 }
 

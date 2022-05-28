@@ -11,6 +11,7 @@ const (
 	SmtpSSL      = "SmtpSSL"
 
 	PushPlusToken     = "PushPlusToken"
+	BarkApi           = "BarkApi"
 	TelegramBotToken  = "TelegramBotToken"
 	TelegramBotChatId = "TelegramBotChatId"
 
