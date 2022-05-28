@@ -9,12 +9,19 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
 
 type Object = orderedmap.OrderedMap
+
+func NewObject() *Object {
+	v := orderedmap.New()
+	v.SetEscapeHTML(false)
+	return v
+}
+
 type Value interface {
 	string | float64 | bool | []any | map[string]any
 }
@@ -48,7 +55,7 @@ func Load(path string, parent *Config) *Config {
 	}
 	New := v == nil
 	if New {
-		v = orderedmap.New()
+		v = NewObject()
 	}
 	return &Config{
 		path,
@@ -90,7 +97,7 @@ func (c *Config) Save() error {
 		}
 		return c.Parent.Save()
 	}
-	dir := path.Dir(c.Path)
+	dir := filepath.Dir(c.Path)
 	data, err := c.JsonMarshal()
 	if err != nil {
 		return err
@@ -99,6 +106,7 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
+	log.Println("保存配置：", c.Path)
 	return ioutil.WriteFile(c.Path, data, fs.ModePerm)
 }
 
@@ -161,17 +169,19 @@ func (c *Config) GetSignOptions(signTypeKey string) *model.SignOptions {
 	}
 }
 
-var Default = orderedmap.New()
+var Default = NewObject()
 
 var AppConfig *Config
 var UsersConfig = map[string]*Config{}
 
+const UserDir = "users"
+
 func GetUserDir(user string) string {
-	return "users/" + user
+	return filepath.Join(UserDir, user)
 }
 
 func GetUserConfigPath(user string) string {
-	return GetUserDir(user) + "/config.json"
+	return filepath.Join(GetUserDir(user), "config.json")
 }
 
 func GetAppConfig() *Config {
@@ -242,7 +252,7 @@ func GocObj(data *Object, key string) (*Object, bool) {
 			return &v, true
 		}
 	}
-	obj := orderedmap.New()
+	obj := NewObject()
 	data.Set(key, obj)
 	return obj, false
 }

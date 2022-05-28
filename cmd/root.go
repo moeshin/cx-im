@@ -27,8 +27,8 @@ func getUserConfig(cmd *cobra.Command, args []string) *config.Config {
 	var username string
 	if len(args) == 0 {
 		if def == "" {
-			cmd.Println("参数错误：没有设置『默认账号』，需要指定『账号』")
-			errs.Panic(cmd.Help())
+			log.Println("参数错误：没有设置『默认账号』，需要指定『账号』")
+			log.Println(cmd.Help())
 			os.Exit(1)
 		} else {
 			username = def
@@ -39,7 +39,7 @@ func getUserConfig(cmd *cobra.Command, args []string) *config.Config {
 	userConfig := appConfig.GetUserConfig(username)
 	if userConfig.New {
 		log.Println("无该账号配置，请初始化")
-		errs.Panic(initCmd.Help())
+		log.Println(initCmd.Help())
 		os.Exit(1)
 	}
 	if def == "" {

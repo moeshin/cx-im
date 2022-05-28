@@ -145,7 +145,7 @@ func (c *CxClient) GetCourses(courses *config.Object) error {
 	for _, match := range matches {
 		courseId := match[1]
 		classId := match[2]
-		c.Log.Print(c.GetCourseDetail(courses, courseId, classId))
+		c.Log.ErrPrint(c.GetCourseDetail(courses, courseId, classId))
 	}
 	return nil
 }
@@ -172,7 +172,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	chatId := AnyToString(data["chatid"])
 	courseName := AnyToString(AnyToJObject(AnyToJArray(AnyToJObject(data["course"])["data"]).Get(0))["name"])
 	className := AnyToString(data["name"])
-	log.Printf("发现课程：《%s》『%s』(%s, %s) %s", courseName, className, courseId, classId, chatId)
+	c.Log.Printf("发现课程：《%s》『%s』(%s, %s) %s", courseName, className, courseId, classId, chatId)
 
 	course := config.GocObjI(courses, chatId)
 	course.Set(config.ChatId, chatId)
@@ -294,7 +294,6 @@ func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, err
 	defer c.Log.ErrClose(writer)
 	err = writer.WriteField("puid", c.Uid)
 	if err != nil {
-		c.Log.ErrClose(writer)
 		return "", nil, err
 	}
 	err = writer.WriteField("_token", token)
