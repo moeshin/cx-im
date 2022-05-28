@@ -63,6 +63,34 @@ func (l *LogN) getCfgString(name string, key string) (string, bool) {
 	return s, b
 }
 
+func (l *LogN) getCfgStrings(name string, keys []string, vales []*string) bool {
+	kl := len(keys)
+	vl := len(vales)
+	if kl != vl {
+		l.Printf("数组长度不一致，%d != %d", kl, vl)
+		return true
+	}
+	for i, key := range keys {
+		v, b := l.getCfgString(name, key)
+		if b {
+			return true
+		}
+		*vales[i] = v
+	}
+	return false
+}
+
+func (l *LogN) Notifying(name string, fn func() error) {
+	l.Println("正在发送 %s 通知", name)
+	err := fn()
+	if err == nil {
+		l.Printf("已发送 %s 通知", name)
+	} else {
+		l.Printf("发送 %s 通知失败！", name)
+		l.ErrPrint(err)
+	}
+}
+
 func NotifyEmail(title string, content string,
 	email string, host string, port int, username string, password string, ssl bool) error {
 	m := mail.NewMSG()
@@ -91,33 +119,23 @@ func NotifyEmail(title string, content string,
 }
 
 func (l *LogN) NotifyEmail(content string) {
-	name := "邮件"
-	email, b := l.getCfgString(name, config.Email)
-	if b {
-		return
-	}
-	host, b := l.getCfgString(name, config.SmtpHost)
-	if b {
-		return
-	}
-	username, b := l.getCfgString(name, config.Username)
-	if b {
-		return
-	}
-	password, b := l.getCfgString(name, config.SmtpPassword)
-	if b {
+	const name = "邮件"
+	var email, host, username, password string
+	if l.getCfgStrings(name, []string{
+		config.Email,
+		config.SmtpHost,
+		config.SmtpUsername,
+		config.SmtpPassword,
+	}, []*string{
+		&email, &host, &username, &password,
+	}) {
 		return
 	}
 	port := int(config.GodRI(l.Cfg, config.SmtpPort, 465.))
 	ssl := config.GodRI(l.Cfg, config.SmtpSSL, true)
-	l.Println("正在发送 %s 通知", name)
-	err := NotifyEmail(l.title, content, email, host, port, username, password, ssl)
-	if err == nil {
-		l.Printf("已发送 %s 通知", name)
-	} else {
-		l.Printf("发送 %s 通知失败！", name)
-		l.ErrPrint(err)
-	}
+	l.Notifying(name, func() error {
+		return NotifyEmail(l.title, content, email, host, port, username, password, ssl)
+	})
 }
 
 func NotifyPushPlus(title string, content string, token string) error {
@@ -155,19 +173,14 @@ func NotifyPushPlus(title string, content string, token string) error {
 }
 
 func (l *LogN) NotifyPushPlus(content string) {
-	name := "PushPlus"
+	const name = "PushPlus"
 	token, b := l.getCfgString(name, config.PushPlusToken)
 	if b {
 		return
 	}
-	l.Println("正在发送 %s 通知", name)
-	err := NotifyPushPlus(l.title, content, token)
-	if err == nil {
-		l.Printf("已发送 %s 通知", name)
-	} else {
-		l.Printf("发送 %s 通知失败！", name)
-		l.ErrPrint(err)
-	}
+	l.Notifying(name, func() error {
+		return NotifyPushPlus(l.title, content, token)
+	})
 }
 
 func NotifyTelegramBot(title string, content string, token string, chatId string) error {
@@ -208,23 +221,19 @@ func NotifyTelegramBot(title string, content string, token string, chatId string
 }
 
 func (l *LogN) NotifyTelegramBot(content string) {
-	name := "Telegram Bot"
-	token, b := l.getCfgString(name, config.TelegramBotToken)
-	if b {
+	const name = "Telegram Bot"
+	var token, chatId string
+	if l.getCfgStrings(name, []string{
+		config.TelegramBotToken,
+		config.TelegramBotChatId,
+	}, []*string{
+		&token, &chatId,
+	}) {
 		return
 	}
-	chatId, b := l.getCfgString(name, config.TelegramBotChatId)
-	if b {
-		return
-	}
-	l.Println("正在发送 %s 通知", name)
-	err := NotifyTelegramBot(l.title, content, token, chatId)
-	if err == nil {
-		l.Printf("已发送 %s 通知", name)
-	} else {
-		l.Printf("发送 %s 通知失败！", name)
-		l.ErrPrint(err)
-	}
+	l.Notifying(name, func() error {
+		return NotifyTelegramBot(l.title, content, token, chatId)
+	})
 }
 
 func (l *LogN) Notify() error {
