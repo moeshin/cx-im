@@ -11,6 +11,7 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"time"
 )
@@ -24,6 +25,22 @@ const (
 	NotifySign
 	NotifySignOk
 )
+
+type logWriter struct {
+	Buffer *bytes.Buffer
+	Skip   bool
+	Log    *LogE
+	Tag    string
+}
+
+func (l *logWriter) Write(p []byte) (int, error) {
+	l.Log.Print(l.Tag, string(p))
+	if !l.Skip {
+		l.Buffer.WriteString(time.Now().Format("15:04:05 "))
+		l.Buffer.Write(p)
+	}
+	return 0, nil
+}
 
 type LogN struct {
 	*LogE
@@ -46,10 +63,11 @@ func (l *LogE) NewLogN(cfg *config.Config) *LogN {
 	writer := &logWriter{
 		Buffer: &bytes.Buffer{},
 		Log:    l,
+		Tag:    tag,
 	}
 	return &LogN{
 		LogE: &LogE{
-			Logger: NewLogger(writer, tag),
+			Logger: log.New(writer, "", 0),
 		},
 		Writer: writer,
 		Cfg:    cfg,
@@ -330,7 +348,7 @@ func (l *LogN) Notify() error {
 	if err != nil {
 		return err
 	}
-	content := string(data)
+	content := l.Writer.Tag + "\n时间：" + time.Now().Format(config.TimeLayout) + "\n" + string(data)
 	if l.header != "" {
 		content = l.header + "\n" + content
 	}

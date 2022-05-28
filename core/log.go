@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"github.com/moeshin/go-errs"
 	"io"
 	"log"
@@ -30,18 +29,4 @@ func (l *LogE) ErrClose(closer io.Closer) {
 
 func (l *LogE) CloseResponse(resp *http.Response) {
 	l.ErrClose(resp.Body)
-}
-
-type logWriter struct {
-	*bytes.Buffer
-	Skip bool
-	Log  *LogE
-}
-
-func (l *logWriter) Write(p []byte) (int, error) {
-	n, err := l.Log.Writer().Write(p)
-	if !l.Skip {
-		_, _ = l.Buffer.Write(p)
-	}
-	return n, err
 }
