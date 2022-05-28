@@ -3,8 +3,8 @@ package config
 import (
 	"cx-im/model"
 	"encoding/json"
-	"github.com/iancoleman/orderedmap"
 	"github.com/moeshin/go-errs"
+	"github.com/moeshin/go-orderedmap"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -247,9 +247,9 @@ func init() {
 func GocObj(data *Object, key string) (*Object, bool) {
 	v, ok := data.Get(key)
 	if ok {
-		v, ok := v.(Object)
+		v, ok := v.(*Object)
 		if ok {
-			return &v, true
+			return v, true
 		}
 	}
 	obj := NewObject()

@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/iancoleman/orderedmap v0.2.0
 	github.com/moeshin/go-errs v1.0.0
+	github.com/moeshin/go-orderedmap v0.2.1-0.20220528222851-7c91592fe054
 	github.com/spf13/cobra v1.4.0
 	github.com/xhit/go-simple-mail/v2 v2.11.0
 )
