@@ -4,7 +4,6 @@ import (
 	"cx-im/config"
 	"cx-im/core"
 	"fmt"
-	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -27,7 +26,8 @@ var testCmd = &cobra.Command{
 			if s != "" {
 				if regexpInt.MatchString(s) {
 					n, err := strconv.ParseInt(s, 10, 64)
-					if errs.Print(err) {
+					if err != nil {
+						log.Println("模拟时间失败，无法转换时间戳", err)
 						os.Exit(1)
 					}
 					if n < 1e12 {
@@ -36,7 +36,8 @@ var testCmd = &cobra.Command{
 					now = time.UnixMilli(n)
 				} else {
 					t, err := time.Parse(config.TimeLayout, s)
-					if errs.Print(err) {
+					if err != nil {
+						log.Println("模拟时间失败，无法解析时间", err)
 						os.Exit(1)
 					}
 					now = t
