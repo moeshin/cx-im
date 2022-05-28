@@ -31,6 +31,7 @@ type LogN struct {
 	Cfg    *config.Config
 	State  NotifyState
 	title  string
+	header string
 }
 
 func (l *LogE) NewLogN(cfg *config.Config) *LogN {
@@ -53,6 +54,11 @@ func (l *LogE) NewLogN(cfg *config.Config) *LogN {
 		Writer: writer,
 		Cfg:    cfg,
 	}
+}
+
+func (l *LogN) SetHeader(header string) {
+	l.Println(header)
+	l.header = header
 }
 
 func (l *LogN) getCfgString(name string, key string) (string, bool) {
@@ -296,35 +302,38 @@ func (l *LogN) IsSkip(key string) bool {
 
 func (l *LogN) Notify() error {
 	l.Writer.Skip = true
-	var s string
+	var n string
 	switch l.State {
 	case NotifyActive:
 		if l.IsSkip(config.NotifyActive) {
 			return nil
 		}
-		s = "活动"
+		n = "活动"
 	case NotifySign:
 		fallthrough
 	case NotifySignOk:
 		if l.IsSkip(config.NotifySign) {
 			return nil
 		}
-		s = "签到"
+		n = "签到"
 		if l.State == NotifySignOk {
-			s += "✔"
+			n += "✔"
 		} else {
-			s += "✖"
+			n += "✖"
 		}
 	}
-	if s != "" {
-		s = NotifyTitle + "：" + s
+	if n != "" {
+		n = NotifyTitle + "：" + n
 	}
-	l.title = s
+	l.title = n
 	data, err := ioutil.ReadAll(l.Writer.Buffer)
 	if err != nil {
 		return err
 	}
 	content := string(data)
+	if l.header != "" {
+		content = l.header + "\n" + content
+	}
 
 	l.NotifyPushPlus(content)
 	l.NotifyEmail(content)

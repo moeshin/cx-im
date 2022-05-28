@@ -83,7 +83,7 @@ func NewClientFromConfig(cfg *config.Config, logE *LogE) (*CxClient, error) {
 }
 
 func (c *CxClient) Login() error {
-	log.Printf("正在登录账号：%s\n", c.Username)
+	log.Printf("正在登录账号：%s", c.Username)
 	var req *http.Request
 	var err error
 	if c.Fid == "" {
@@ -172,7 +172,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	chatId := AnyToString(data["chatid"])
 	courseName := AnyToString(AnyToJObject(AnyToJArray(AnyToJObject(data["course"])["data"]).Get(0))["name"])
 	className := AnyToString(data["name"])
-	log.Printf("发现课程：《%s》『%s』(%s, %s) %s\n", courseName, className, courseId, classId, chatId)
+	log.Printf("发现课程：《%s》『%s』(%s, %s) %s", courseName, className, courseId, classId, chatId)
 
 	course := config.GocObjI(courses, chatId)
 	course.Set(config.ChatId, chatId)

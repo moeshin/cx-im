@@ -6,6 +6,7 @@ import (
 	"cx-im/im/cmd_course_chat_feedback"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
@@ -227,7 +228,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		}
 		courseConfig := w.Config.GetCourseConfig(chatId)
 		courseName := config.GodCI(courseConfig, config.CourseName, "")
-		logN.Printf("收到来自《%s》的群聊：%s\n", courseName, s)
+		logN.SetHeader(fmt.Sprintf("收到来自《%s》的群聊：%s", courseName, s))
 		activeId, err := cmd_course_chat_feedback.GetActiveId(buf)
 		if w.Log.ErrPrint(err) {
 			return
@@ -247,26 +248,26 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 			courseConfig := w.Config.GetCourseConfig(chatId)
 			courseName = config.GodCI(courseConfig, config.CourseName, "")
 		}
-		logN.Printf("收到来自《%s》的主题讨论：%s\n", courseName, title)
+		logN.SetHeader(fmt.Sprintf("收到来自《%s》的主题讨论：%s", courseName, title))
 		return
 	}
 	if attType != 15 {
 		logN.Println("IM 解析失败，attachmentType != 15")
-		logN.Printf("attr: %#v\n", att)
+		logN.Printf("attr: %#v", att)
 		return
 	}
 
 	attCourse, ok := GodJObject(att, "att_chat_course", map[string]any{})
 	if !ok {
 		logN.Println("IM 解析失败，无法获取 att_chat_course")
-		logN.Printf("attr: %#v\n", att)
+		logN.Printf("attr: %#v", att)
 		return
 	}
 
 	activeId := strconv.FormatInt(int64(GodJObjectI(attCourse, "aid", 0.)), 10)
 	if activeId == "0" {
 		logN.Println("IM 解析失败，无法获取 aid")
-		logN.Printf("attr: %#v\n", att)
+		logN.Printf("attr: %#v", att)
 		return
 	}
 	logN.Println("activeId:", activeId)
@@ -274,7 +275,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 	courseInfo, ok := GodJObject(attCourse, "courseInfo", map[string]any{})
 	if !ok {
 		logN.Println("IM 解析失败，无法获取 courseInfo")
-		logN.Printf("attr: %#v\n", att)
+		logN.Printf("attr: %#v", att)
 		return
 	}
 
@@ -292,7 +293,9 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 				name += "活动"
 			}
 		}
-		logN.Printf("收到来自《%s》的%s：%s\n", courseName, name, GodJObjectI(attCourse, "title", ""))
+		logN.SetHeader(fmt.Sprintf(
+			"收到来自《%s》的%s：%s", courseName, name, GodJObjectI(attCourse, "title", ""),
+		))
 	}
 
 	attActiveType := GodJObjectI(attCourse, "activeType", 0.)
@@ -317,7 +320,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		type: 4: 直播
 		*/
 		logN.Println("接收到的不是签到活动")
-		logN.Printf("attr: %#v\n", att)
+		logN.Printf("attr: %#v", att)
 		return
 	}
 
@@ -374,7 +377,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 			signOptions.Longitude = GodJObjectI(active, "locationLongitude", "")
 			signOptions.Latitude = GodJObjectI(active, "locationLatitude", "")
 			logN.Printf(
-				"教师指定签到地点：%s (%s, %s) ~%s 米\n",
+				"教师指定签到地点：%s (%s, %s) ~%s 米",
 				signOptions.Address,
 				signOptions.Longitude,
 				signOptions.Latitude,
@@ -389,11 +392,11 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		logN.Println(err)
 	}
 
-	logN.Printf("签到准备完毕，耗时：%dms\n", time.Now().UnixMilli()-startTime)
+	logN.Printf("签到准备完毕，耗时：%dms", time.Now().UnixMilli()-startTime)
 	takeTime := time.Now().UnixMilli() - taskTime
-	logN.Printf("签到已发布：%dms\n", takeTime)
+	logN.Printf("签到已发布：%dms", takeTime)
 	delayTime := int64(config.GodRI(courseConfig, config.SignDelay, 0.))
-	logN.Printf("用户配置延迟签到：%d\n", delayTime)
+	logN.Printf("用户配置延迟签到：%d", delayTime)
 	if delayTime > 0 {
 		delay := delayTime*1000 - takeTime
 		if delay > 0 {
