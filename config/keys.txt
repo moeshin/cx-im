@@ -1,16 +1,16 @@
 DefaultUsername
 
-Email
+NotifyEmail
 SmtpHost
 SmtpPort
 SmtpUsername
 SmtpPassword
 SmtpSSL
 
-PushPlusToken
-BarkApi
-TelegramBotToken
-TelegramBotChatId
+NotifyPushPlusToken
+NotifyBarkApi
+NotifyTelegramBotToken
+NotifyTelegramBotChatId
 
 SignAddress
 SignLongitude

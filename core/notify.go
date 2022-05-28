@@ -123,7 +123,7 @@ func (l *LogN) NotifyEmail(content string) {
 	const name = "邮件"
 	var email, host, username, password string
 	if l.getCfgStrings(name, []string{
-		config.Email,
+		config.NotifyEmail,
 		config.SmtpHost,
 		config.SmtpUsername,
 		config.SmtpPassword,
@@ -175,7 +175,7 @@ func NotifyPushPlus(title string, content string, token string) error {
 
 func (l *LogN) NotifyPushPlus(content string) {
 	const name = "PushPlus"
-	token, b := l.getCfgString(name, config.PushPlusToken)
+	token, b := l.getCfgString(name, config.NotifyPushPlusToken)
 	if b {
 		return
 	}
@@ -225,8 +225,8 @@ func (l *LogN) NotifyTelegramBot(content string) {
 	const name = "Telegram Bot"
 	var token, chatId string
 	if l.getCfgStrings(name, []string{
-		config.TelegramBotToken,
-		config.TelegramBotChatId,
+		config.NotifyTelegramBotToken,
+		config.NotifyTelegramBotChatId,
 	}, []*string{
 		&token, &chatId,
 	}) {
@@ -273,7 +273,7 @@ func NotifyBark(title string, content string, api string) error {
 
 func (l *LogN) NotifyBark(content string) {
 	const name = "Bark"
-	api, b := l.getCfgString(name, config.BarkApi)
+	api, b := l.getCfgString(name, config.NotifyBarkApi)
 	if b {
 		return
 	}

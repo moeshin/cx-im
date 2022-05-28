@@ -3,17 +3,17 @@ package config
 const (
 	DefaultUsername = "DefaultUsername"
 
-	Email        = "Email"
+	NotifyEmail  = "NotifyEmail"
 	SmtpHost     = "SmtpHost"
 	SmtpPort     = "SmtpPort"
 	SmtpUsername = "SmtpUsername"
 	SmtpPassword = "SmtpPassword"
 	SmtpSSL      = "SmtpSSL"
 
-	PushPlusToken     = "PushPlusToken"
-	BarkApi           = "BarkApi"
-	TelegramBotToken  = "TelegramBotToken"
-	TelegramBotChatId = "TelegramBotChatId"
+	NotifyPushPlusToken     = "NotifyPushPlusToken"
+	NotifyBarkApi           = "NotifyBarkApi"
+	NotifyTelegramBotToken  = "NotifyTelegramBotToken"
+	NotifyTelegramBotChatId = "NotifyTelegramBotChatId"
 
 	SignAddress   = "SignAddress"
 	SignLongitude = "SignLongitude"

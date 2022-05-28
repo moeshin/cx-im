@@ -204,16 +204,17 @@ func init() {
 	set := func(k string, v any) {
 		Default.Set(k, v)
 	}
-	set(Email, "")
+	set(NotifyEmail, "")
 	set(SmtpHost, "")
 	set(SmtpPort, 465)
 	set(SmtpUsername, "")
 	set(SmtpPassword, "")
 	set(SmtpSSL, true)
 
-	set(PushPlusToken, "")
-	set(TelegramBotToken, "")
-	set(TelegramBotChatId, "")
+	set(NotifyPushPlusToken, "")
+	set(NotifyBarkApi, "")
+	set(NotifyTelegramBotToken, "")
+	set(NotifyTelegramBotChatId, "")
 
 	set(SignAddress, DefaultSignAddress)
 	set(SignLongitude, DefaultSignLongitude)
