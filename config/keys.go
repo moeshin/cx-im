@@ -15,6 +15,9 @@ const (
 	NotifyTelegramBotToken  = "NotifyTelegramBotToken"
 	NotifyTelegramBotChatId = "NotifyTelegramBotChatId"
 
+	NotifySign   = "NotifySign"
+	NotifyActive = "NotifyActive"
+
 	SignAddress   = "SignAddress"
 	SignLongitude = "SignLongitude"
 	SignLatitude  = "SignLatitude"

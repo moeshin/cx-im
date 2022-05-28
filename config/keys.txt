@@ -12,6 +12,9 @@ NotifyBarkApi
 NotifyTelegramBotToken
 NotifyTelegramBotChatId
 
+NotifySign
+NotifyActive
+
 SignAddress
 SignLongitude
 SignLatitude

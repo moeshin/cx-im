@@ -286,26 +286,40 @@ func (l *LogN) NotifyBark(content string) {
 	})
 }
 
+func (l *LogN) IsSkip(key string) bool {
+	b := !config.GodRI(l.Cfg, key, true)
+	if b {
+		l.Printf("由于用户配置 %s 跳过通知", key)
+	}
+	return b
+}
+
 func (l *LogN) Notify() error {
 	l.Writer.Skip = true
-	{
-		var s string
-		if l.State == NotifyActive {
-			s = "活动"
+	var s string
+	switch l.State {
+	case NotifyActive:
+		if l.IsSkip(config.NotifyActive) {
+			return nil
+		}
+		s = "活动"
+	case NotifySign:
+		fallthrough
+	case NotifySignOk:
+		if l.IsSkip(config.NotifySign) {
+			return nil
+		}
+		s = "签到"
+		if l.State == NotifySignOk {
+			s += "✔"
 		} else {
-			s = "签到"
-			switch l.State {
-			case NotifySignOk:
-				s += "✔"
-			case NotifySign:
-				s += "✖"
-			}
+			s += "✖"
 		}
-		if s != "" {
-			s = NotifyTitle + "：" + s
-		}
-		l.title = s
 	}
+	if s != "" {
+		s = NotifyTitle + "：" + s
+	}
+	l.title = s
 	data, err := ioutil.ReadAll(l.Writer.Buffer)
 	if err != nil {
 		return err

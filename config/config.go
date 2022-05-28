@@ -217,6 +217,9 @@ func init() {
 	set(NotifyTelegramBotToken, "")
 	set(NotifyTelegramBotChatId, "")
 
+	set(NotifyActive, true)
+	set(NotifySign, true)
+
 	set(SignAddress, DefaultSignAddress)
 	set(SignLongitude, DefaultSignLongitude)
 	set(SignLatitude, DefaultSignLatitude)
