@@ -168,7 +168,11 @@ func NotifyPushPlus(title string, content string, token string) error {
 		return err
 	}
 	if GodJObjectI(v, "code", 0.) != 200 {
-		return errors.New(GodJObjectI(v, "msg", ""))
+		msg := GodJObjectI(v, "msg", "")
+		if msg == "" {
+			msg = string(data)
+		}
+		return errors.New(msg)
 	}
 	return nil
 }
