@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 )
 
@@ -154,8 +155,8 @@ func (c *Config) GetSignOptions(signTypeKey string) *model.SignOptions {
 	}
 	return &model.SignOptions{
 		Address:   GodRI(c, SignAddress, DefaultSignAddress),
-		Longitude: GodRI(c, SignLongitude, DefaultSignLongitude),
-		Latitude:  GodRI(c, SignLatitude, DefaultSignLatitude),
+		Longitude: FloatToString(GodRI(c, SignLongitude, DefaultSignLongitude)),
+		Latitude:  FloatToString(GodRI(c, SignLatitude, DefaultSignLatitude)),
 		Ip:        GodRI(c, SignIp, DefaultSignIp),
 	}
 }
@@ -195,8 +196,8 @@ func (c *Config) GetUserConfig(user string) *Config {
 
 const (
 	DefaultSignAddress   = "中国"
-	DefaultSignLongitude = "-1"
-	DefaultSignLatitude  = "-1"
+	DefaultSignLongitude = -1.
+	DefaultSignLatitude  = -1.
 	DefaultSignIp        = "1.1.1.1"
 )
 
@@ -267,4 +268,8 @@ func GodCI[T Value](config *Config, key string, def T) T {
 func GodRI[T Value](config *Config, key string, def T) T {
 	v, _ := God(config, key, def, true)
 	return v
+}
+
+func FloatToString(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
 }

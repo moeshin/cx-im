@@ -370,9 +370,9 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		break
 	case SignTypeLocation:
 		if GodJObjectI(active, "ifopenAddress", 0.) != 0 {
-			signOptions.Address = GodJObjectI(active, "locationText", config.DefaultSignAddress)
-			signOptions.Longitude = GodJObjectI(active, "locationLongitude", config.DefaultSignLongitude)
-			signOptions.Latitude = GodJObjectI(active, "locationLatitude", config.DefaultSignLatitude)
+			signOptions.Address = GodJObjectI(active, "locationText", "")
+			signOptions.Longitude = GodJObjectI(active, "locationLongitude", "")
+			signOptions.Latitude = GodJObjectI(active, "locationLatitude", "")
 			logN.Printf(
 				"教师指定签到地点：%s (%s, %s) ~%s 米\n",
 				signOptions.Address,
