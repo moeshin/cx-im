@@ -3,6 +3,9 @@ package config
 const (
 	DefaultUsername = "DefaultUsername"
 
+	WebHost = "WebHost"
+	WebPort = "WebPort"
+
 	NotifyEmail  = "NotifyEmail"
 	SmtpHost     = "SmtpHost"
 	SmtpPort     = "SmtpPort"

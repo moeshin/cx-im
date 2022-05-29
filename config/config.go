@@ -205,6 +205,9 @@ func (c *Config) GetUserConfig(user string) *Config {
 }
 
 const (
+	DefaultWebHost = ""
+	DefaultWebPort = 5743.
+
 	DefaultSignAddress   = "中国"
 	DefaultSignLongitude = -1.
 	DefaultSignLatitude  = -1.
@@ -215,9 +218,12 @@ func init() {
 	set := func(k string, v any) {
 		Default.Set(k, v)
 	}
+	set(WebHost, DefaultWebHost)
+	set(WebPort, DefaultWebPort)
+
 	set(NotifyEmail, "")
 	set(SmtpHost, "")
-	set(SmtpPort, 465)
+	set(SmtpPort, 465.)
 	set(SmtpUsername, "")
 	set(SmtpPassword, "")
 	set(SmtpSSL, true)
@@ -235,7 +241,7 @@ func init() {
 	set(SignLatitude, DefaultSignLatitude)
 	set(SignIp, DefaultSignIp)
 
-	set(SignDelay, 0)
+	set(SignDelay, 0.)
 	set(SignEnable, false)
 	set(SignNormal, true)
 	set(SignPhoto, true)

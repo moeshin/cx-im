@@ -6,6 +6,7 @@ import (
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
 	"os"
+	"strings"
 )
 
 var updateCmd = &cobra.Command{
@@ -39,7 +40,11 @@ func updateAll() {
 		if !dir.IsDir() {
 			continue
 		}
-		userConfig := config.Load(config.GetUserConfigPath(dir.Name()), nil)
+		name := dir.Name()
+		if strings.HasPrefix(name, ".") {
+			continue
+		}
+		userConfig := config.Load(config.GetUserConfigPath(name), nil)
 		client, err := core.NewClientFromConfig(userConfig, nil)
 		if errs.Print(err) {
 			continue

@@ -1,5 +1,8 @@
 DefaultUsername
 
+WebHost
+WebPort
+
 NotifyEmail
 SmtpHost
 SmtpPort
