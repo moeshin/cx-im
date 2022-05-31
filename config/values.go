@@ -42,16 +42,16 @@ var KeyValues = map[string]int{
 	"SignDelay":    ValueNumber,
 	"SignEnable":   ValueBool,
 	"SignNormal":   ValueBool,
-	"SignPhoto":    ValueBool | ValueArray | ValueJson,
+	"SignPhoto":    ValueBool | ValueString | ValueArray | ValueJson,
 	"SignGesture":  ValueBool,
 	"SignLocation": ValueBool,
 	"SignCode":     ValueBool,
 
 	"Username": ValueString,
-	"Password": ValueString | ValueHide,
+	"Password": ValueString | ValuePassword,
 	"Fid":      ValueString,
 
-	"Courses":    ValueJson,
+	"Courses":    ValueJson | ValueHide,
 	"ChatId":     ValueString,
 	"CourseId":   ValueString,
 	"ClassId":    ValueString,
@@ -64,7 +64,9 @@ func ValidKeyValue(k string, v any) bool {
 	if !ok {
 		return false
 	}
-
+	if typ == typ|ValueHide {
+		return false
+	}
 	if typ == typ|ValueBool {
 		_, ok = v.(bool)
 		if ok {
