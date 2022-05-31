@@ -76,15 +76,14 @@ type WebHandler struct {
 }
 
 func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer errs.Close(r.Body)
 	urlPath := r.URL.Path
-	log.Println(urlPath, r.Method)
-	if r.Method == "POST" && strings.HasPrefix(urlPath, "/api/") {
-		api := core.NewApi()
+	if strings.HasPrefix(urlPath, "/api/") {
+		api := core.NewApi(r)
 		defer api.Response(w)
 		urlPath = urlPath[5:]
-		log.Println(urlPath)
-		switch urlPath {
-		case "users":
+		log.Println(r.Method, urlPath)
+		if urlPath == "users" {
 			data := map[string]bool{}
 			for k, v := range config.UsersConfig {
 				v.User.Mutex.RLock()
@@ -93,6 +92,19 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			api.O(data)
 			return
+		}
+		if strings.HasPrefix(urlPath, "cfg/") {
+			urlPath = urlPath[4:]
+			if urlPath == "app" {
+				api.HandleConfig("")
+				return
+			} else if strings.HasPrefix(urlPath, "user/") {
+				username := urlPath[5:]
+				if username != "" {
+					api.HandleConfig(username)
+					return
+				}
+			}
 		}
 	}
 	w.WriteHeader(http.StatusBadRequest)

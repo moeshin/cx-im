@@ -4,9 +4,9 @@ type ValueType = int
 
 const (
 	ValueHide ValueType = 1 << iota
+	ValueBool
 	ValueNumber
 	ValueString
-	ValueBool
 	ValuePassword
 	ValueJson
 	ValueArray
@@ -57,4 +57,43 @@ var KeyValues = map[string]int{
 	"ClassId":    ValueString,
 	"CourseName": ValueString,
 	"ClassName":  ValueString,
+}
+
+func ValidKeyValue(k string, v any) bool {
+	typ, ok := KeyValues[k]
+	if !ok {
+		return false
+	}
+
+	if typ == typ|ValueBool {
+		_, ok = v.(bool)
+		if ok {
+			return true
+		}
+	}
+	if typ == typ|ValueNumber {
+		_, ok = v.(float64)
+		if ok {
+			return true
+		}
+	}
+	if typ == typ|ValueString {
+		_, ok = v.(string)
+		if ok {
+			return true
+		}
+	}
+	if typ == typ|ValueJson {
+		_, ok = v.(map[string]any)
+		if ok {
+			return true
+		}
+	}
+	if typ == typ|ValueArray {
+		_, ok = v.([]any)
+		if ok {
+			return true
+		}
+	}
+	return false
 }
