@@ -15,6 +15,7 @@ type Api struct {
 	Msg  string `json:"msg"`
 	Data any    `json:"data"`
 	req  *http.Request
+	code int
 }
 
 func NewApi(req *http.Request) *Api {
@@ -23,11 +24,16 @@ func NewApi(req *http.Request) *Api {
 		Msg:  "",
 		Data: nil,
 		req:  req,
+		code: http.StatusOK,
 	}
 }
 
 func (a *Api) Response(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", MimeJson)
+	if a.code != http.StatusOK {
+		w.WriteHeader(a.code)
+		return
+	}
 	data, err := json.MarshalIndent(a, "", "  ")
 	if errs.Print(err) {
 		return
@@ -62,6 +68,10 @@ func (a *Api) Err(err error) bool {
 		errs.Print(err)
 	}
 	return b
+}
+
+func (a *Api) Bad() {
+	a.code = http.StatusBadRequest
 }
 
 func (a *Api) AddMsg(msg string) {
@@ -114,6 +124,7 @@ func (a *Api) HandleConfig(name string) {
 		}
 		a.Ok = a.Msg == ""
 	default:
+		a.Bad()
 		return
 	}
 }
