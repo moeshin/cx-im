@@ -83,27 +83,46 @@ func (a *Api) AddMsg(msg string) {
 
 func (a *Api) HandleConfig(name string) {
 	cfg := config.GetAppConfig()
-	if name != "" {
+	isApp := name == ""
+	if !isApp {
 		cfg = cfg.GetUserConfig(name)
 	}
 	switch a.req.Method {
 	case http.MethodGet:
-		data := map[string]*ApiDataConfig{}
+		data := map[string]any{}
 		a.O(data)
-		for _, k := range cfg.Keys() {
-			typ, ok := config.KeyValues[k]
-			if !ok || typ <= config.ValueHide {
-				continue
+		var fun func(*config.Config, map[string]any, bool)
+		fun = func(cfg *config.Config, data map[string]any, isCourses bool) {
+			for _, k := range cfg.Keys() {
+				if !isApp && !isCourses && k == config.Courses {
+					courses := cfg.GetCourses()
+					m := map[string]map[string]any{}
+					data[k] = m
+					cfg.Mutex.RLock()
+					for _, chatId := range courses.Keys() {
+						cfg := cfg.GetCourseConfig(chatId)
+						data := map[string]any{}
+						m[chatId] = data
+						fun(cfg, data, true)
+					}
+					cfg.Mutex.RUnlock()
+					continue
+				}
+				typ, ok := config.KeyValues[k]
+				if !ok || typ == typ|config.ValueHide {
+					continue
+				}
+				v, ok := cfg.GetC(k)
+				if !ok {
+					continue
+				}
+				if typ == typ|config.ValuePassword {
+					v = "*"
+				}
+				data[k] = v
 			}
-			v, ok := cfg.GetC(k)
-			if !ok {
-				continue
-			}
-			if typ == typ|config.ValuePassword {
-				v = "*"
-			}
-			data[k] = &ApiDataConfig{v, typ}
 		}
+		fun(cfg, data, false)
 	case http.MethodPost:
 		var data JObject
 		err := a.ParseJson(&data)
@@ -127,9 +146,4 @@ func (a *Api) HandleConfig(name string) {
 		a.Bad()
 		return
 	}
-}
-
-type ApiDataConfig struct {
-	Value any `json:"value"`
-	Type  int `json:"type"`
 }

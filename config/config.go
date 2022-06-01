@@ -23,7 +23,7 @@ func NewObject() *Object {
 }
 
 type Value interface {
-	string | float64 | bool | []any | map[string]any
+	string | float64 | bool | []any | *Object
 }
 
 type User struct {
