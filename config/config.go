@@ -37,6 +37,7 @@ type Config struct {
 	Parent *Config
 	User   *User
 	New    bool
+	Mutex  *sync.RWMutex
 }
 
 func Load(path string, parent *Config) *Config {
@@ -63,30 +64,41 @@ func Load(path string, parent *Config) *Config {
 		parent,
 		nil,
 		New,
+		newMutex(),
 	}
 }
 
-func (c *Config) Get(key string, r bool) any {
-	v, ok := c.Data.Get(key)
+func (c *Config) Get(k string, r bool) any {
+	v, ok := c.GetC(k)
 	if r && (!ok || v == nil) {
 		if c.Parent == nil {
-			v, _ = Default.Get(key)
+			v, _ = Default.Get(k)
 		} else {
-			v = c.Parent.Get(key, true)
+			v = c.Parent.Get(k, true)
 		}
 	}
 	return v
 }
 
-func (c *Config) GetR(key string) any {
-	return c.Get(key, true)
+func (c *Config) Set(k string, v any) {
+	c.Lock()
+	defer c.UnLock()
+	c.Data.Set(k, v)
 }
 
-func (c *Config) GetC(key string) any {
-	return c.Get(key, false)
+func (c *Config) GetR(k string) any {
+	return c.Get(k, true)
+}
+
+func (c *Config) GetC(k string) (any, bool) {
+	c.RLock()
+	defer c.RUnlock()
+	return c.Data.Get(k)
 }
 
 func (c *Config) JsonMarshal() ([]byte, error) {
+	c.RLock()
+	defer c.RUnlock()
 	return json.MarshalIndent(c.Data, "", "  ")
 }
 
@@ -119,11 +131,7 @@ func (c *Config) String() string {
 }
 
 func (c *Config) GetDefaultUsername() string {
-	var s string
-	v, ok := c.Data.Get(DefaultUsername)
-	if ok {
-		s, _ = v.(string)
-	}
+	s := GodCI(c, DefaultUsername, "")
 	if s != "" {
 		_, err := os.Stat(GetUserConfigPath(s))
 		if err != nil {
@@ -139,10 +147,12 @@ func (c *Config) HasDefaultUsername() bool {
 
 func (c *Config) SetDefaultUsername(username string) {
 	log.Println("设置默认用户：" + username)
-	c.Data.Set(DefaultUsername, username)
+	c.Set(DefaultUsername, username)
 }
 
 func (c *Config) GetCourses() *Object {
+	c.RLock()
+	defer c.RUnlock()
 	return GocObjI(c.Data, Courses)
 }
 
@@ -154,6 +164,7 @@ func (c *Config) GetCourseConfig(chatId string) *Config {
 		c,
 		nil,
 		!ok,
+		newMutex(),
 	}
 }
 
@@ -167,6 +178,49 @@ func (c *Config) GetSignOptions(signTypeKey string) *model.SignOptions {
 		Latitude:  FloatToString(GodRI(c, SignLatitude, DefaultSignLatitude)),
 		Ip:        GodRI(c, SignIp, DefaultSignIp),
 	}
+}
+
+func (c *Config) Keys() []string {
+	c.RLock()
+	defer c.RUnlock()
+	return c.Data.Keys()
+}
+
+var HasMutex = false
+
+func newMutex() *sync.RWMutex {
+	if HasMutex {
+		return &sync.RWMutex{}
+	}
+	return nil
+}
+
+func (c *Config) Lock() {
+	if c.Mutex == nil {
+		return
+	}
+	c.Mutex.Lock()
+}
+
+func (c *Config) UnLock() {
+	if c.Mutex == nil {
+		return
+	}
+	c.Mutex.Unlock()
+}
+
+func (c *Config) RLock() {
+	if c.Mutex == nil {
+		return
+	}
+	c.Mutex.RLock()
+}
+
+func (c *Config) RUnlock() {
+	if c.Mutex == nil {
+		return
+	}
+	c.Mutex.RUnlock()
 }
 
 var Default = NewObject()

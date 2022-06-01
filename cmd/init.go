@@ -31,10 +31,9 @@ var initCmd = &cobra.Command{
 		errs.Panic(err)
 		errs.Panic(client.Login())
 
-		data := userConfig.Data
-		data.Set(config.Username, username)
-		data.Set(config.Password, password)
-		data.Set(config.Fid, fid)
+		userConfig.Set(config.Username, username)
+		userConfig.Set(config.Password, password)
+		userConfig.Set(config.Fid, fid)
 
 		courses := userConfig.GetCourses()
 		errs.Panic(client.GetCourses(courses))

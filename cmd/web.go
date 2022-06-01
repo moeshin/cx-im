@@ -17,6 +17,7 @@ var webCmd = &cobra.Command{
 	Use:   "web",
 	Short: "网页模式",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.HasMutex = true
 		webRun()
 	},
 }

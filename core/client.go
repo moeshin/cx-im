@@ -60,25 +60,15 @@ func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
 }
 
 func NewClientFromConfig(cfg *config.Config, logE *LogE) (*CxClient, error) {
-	var username, password, fid string
-	v, ok := cfg.Data.Get(config.Username)
-	if ok {
-		username, ok = v.(string)
-	}
+	username := config.GodCI(cfg, config.Username, "")
 	if username == "" {
 		return nil, errors.New("账号不存在")
 	}
-	v, ok = cfg.Data.Get(config.Password)
-	if ok {
-		password, ok = v.(string)
-	}
+	password := config.GodCI(cfg, config.Password, "")
 	if password == "" {
 		return nil, errors.New("密码不存在")
 	}
-	v, _ = cfg.Data.Get(config.Fid)
-	if ok {
-		fid, ok = v.(string)
-	}
+	fid := config.GodCI(cfg, config.Password, "")
 	return NewClient(username, password, fid, logE)
 }
 

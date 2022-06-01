@@ -90,13 +90,13 @@ func (a *Api) HandleConfig(name string) {
 	case http.MethodGet:
 		data := map[string]*ApiDataConfig{}
 		a.O(data)
-		for _, k := range cfg.Data.Keys() {
+		for _, k := range cfg.Keys() {
 			typ, ok := config.KeyValues[k]
 			if !ok || typ <= config.ValueHide {
 				continue
 			}
-			v, ok := cfg.Data.Get(k)
-			if ok {
+			v, ok := cfg.GetC(k)
+			if !ok {
 				continue
 			}
 			if typ == typ|config.ValuePassword {
@@ -117,7 +117,7 @@ func (a *Api) HandleConfig(name string) {
 				continue
 			}
 			save = true
-			cfg.Data.Set(k, v)
+			cfg.Set(k, v)
 		}
 		if save && a.Err(cfg.Save()) {
 			return
