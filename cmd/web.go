@@ -111,24 +111,7 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						if chatId != "" {
 							if r.Method == http.MethodPost {
 								cfg := config.GetAppConfig().GetUserConfig(username).GetCourseConfig(chatId)
-								var data core.JObject
-								err := api.ParseJson(&data)
-								if api.Err(err) {
-									return
-								}
-								save := false
-								for k, v := range data {
-									if !config.ValidKeyValue(config.ValueLevelCourse, k, v) {
-										api.AddMsg(fmt.Sprintf("无效键值：%s", k))
-										continue
-									}
-									save = true
-									cfg.Set(k, v)
-								}
-								if save && api.Err(cfg.Save()) {
-									return
-								}
-								api.Ok = api.Msg == ""
+								api.SetConfigValues(cfg)
 							}
 						}
 					}

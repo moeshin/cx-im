@@ -128,26 +128,30 @@ func (a *Api) HandleConfig(name string) {
 		}
 		fun(cfg, data, false)
 	case http.MethodPost:
-		var data JObject
-		err := a.ParseJson(&data)
-		if a.Err(err) {
-			return
-		}
-		save := false
-		for k, v := range data {
-			if !config.ValidKeyValue(lv, k, v) {
-				a.AddMsg(fmt.Sprintf("无效键值：%s", k))
-				continue
-			}
-			save = true
-			cfg.Set(k, v)
-		}
-		if save && a.Err(cfg.Save()) {
-			return
-		}
-		a.Ok = a.Msg == ""
+		a.SetConfigValues(cfg)
 	default:
 		a.Bad()
 		return
 	}
+}
+
+func (a *Api) SetConfigValues(cfg *config.Config) {
+	var data JObject
+	err := a.ParseJson(&data)
+	if a.Err(err) {
+		return
+	}
+	save := false
+	for k, v := range data {
+		if !config.ValidKeyValue(config.ValueLevelCourse, k, v) {
+			a.AddMsg(fmt.Sprintf("无效键值：%s", k))
+			continue
+		}
+		save = true
+		cfg.Set(k, v)
+	}
+	if save && a.Err(cfg.Save()) {
+		return
+	}
+	a.Ok = a.Msg == ""
 }
