@@ -87,7 +87,7 @@ func (w *Work) Connect() error {
 }
 
 func (w *Work) Send(data []byte) error {
-	w.Log.Println("IM 发送消息", len(data), ":", string(data))
+	w.Log.Println(fmt.Sprintf("IM 发送消息 %d：", len(data)) + string(data))
 	return w.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
@@ -97,7 +97,7 @@ func (w *Work) onMsg(typ int, msg []byte) {
 	if typ == websocket.TextMessage && length == 1 && msg[0] == 'h' {
 		// TODO 心跳包
 	} else {
-		w.Log.Println("IM 接收到消息", typ, length, ":", string(msg))
+		w.Log.Println(fmt.Sprintf("IM 接收到消息 %d %d：", typ, len(msg)) + string(msg))
 	}
 	if length == 1 && msg[0] == 'o' {
 		w.Log.Println("IM 登录")
