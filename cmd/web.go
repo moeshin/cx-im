@@ -39,6 +39,7 @@ func init() {
 }
 
 func webRun() {
+	config.InitUsersConfig()
 	appConfig := config.GetAppConfig()
 
 	// 载入所有用户
@@ -95,22 +96,26 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch urlPath {
 		case "users":
 			data := map[string]bool{}
-			for k, v := range config.UsersConfig {
+			config.UsersConfig.Mutex.RLock()
+			for k, v := range config.UsersConfig.Map {
 				v.User.Mutex.RLock()
 				data[k] = v.User.Running
 				v.User.Mutex.RUnlock()
 			}
+			config.UsersConfig.Mutex.RUnlock()
 			api.O(data)
 			return
 		case "users/start":
 			fallthrough
 		case "users/stop":
 			run := urlPath[6:] == "start"
-			for _, v := range config.UsersConfig {
+			config.UsersConfig.Mutex.RLock()
+			for _, v := range config.UsersConfig.Map {
 				v.User.Mutex.RLock()
 				v.User.Running = run
 				v.User.Mutex.RUnlock()
 			}
+			config.UsersConfig.Mutex.RUnlock()
 			api.Ok = true
 			return
 		case "user/start":
@@ -146,12 +151,14 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						api.Err(err)
 						return
 					case http.MethodDelete:
-						delete(config.UsersConfig, username)
+						config.UsersConfig.Mutex.Lock()
+						delete(config.UsersConfig.Map, username)
+						config.UsersConfig.Mutex.Unlock()
 						api.Err(os.RemoveAll(config.GetUserDir(username)))
 						return
 					}
 				}
-				v, ok := config.UsersConfig[username]
+				v, ok := config.UsersConfig.Get(username)
 				if !ok {
 					api.OE("用户不存在：" + username)
 					return

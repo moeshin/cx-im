@@ -226,7 +226,6 @@ func (c *Config) RUnlock() {
 var Default = NewObject()
 
 var AppConfig *Config
-var UsersConfig = map[string]*Config{}
 
 const UserDir = "users"
 
@@ -250,10 +249,13 @@ func GetAppConfig() *Config {
 }
 
 func (c *Config) GetUserConfig(user string) *Config {
-	v, ok := UsersConfig[user]
+	if UsersConfig == nil {
+		return Load(GetUserConfigPath(user), c)
+	}
+	v, ok := UsersConfig.Map[user]
 	if !ok {
 		v = Load(GetUserConfigPath(user), c)
-		UsersConfig[user] = v
+		UsersConfig.Map[user] = v
 	}
 	return v
 }
@@ -345,4 +347,31 @@ func GodRI[T Value](config *Config, key string, def T) T {
 
 func FloatToString(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
+}
+
+type UsersConfigS struct {
+	Map   map[string]*Config
+	Mutex *sync.RWMutex
+}
+
+var UsersConfig *UsersConfigS
+
+func InitUsersConfig() {
+	UsersConfig = &UsersConfigS{
+		Map:   map[string]*Config{},
+		Mutex: &sync.RWMutex{},
+	}
+}
+
+func (s *UsersConfigS) Get(user string) (*Config, bool) {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	v, ok := s.Map[user]
+	return v, ok
+}
+
+func (s *UsersConfigS) Set(user string, cfg *Config) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	s.Map[user] = cfg
 }
