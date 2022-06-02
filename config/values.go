@@ -52,7 +52,7 @@ var KeyValues = map[string]int{
 	"Fid":      ValueString,
 
 	"Courses":    ValueJson | ValueHide,
-	"ChatId":     ValueString,
+	"ChatId":     ValueString | ValueHide,
 	"CourseId":   ValueString,
 	"ClassId":    ValueString,
 	"CourseName": ValueString,

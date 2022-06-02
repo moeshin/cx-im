@@ -98,14 +98,43 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			urlPath = urlPath[4:]
 			if urlPath == "app" {
 				api.HandleConfig("")
-				return
-			} else if strings.HasPrefix(urlPath, "user/") {
-				username := urlPath[5:]
-				if username != "" {
-					api.HandleConfig(username)
-					return
+			} else {
+				username := r.URL.Query().Get("username")
+				if urlPath == "user" {
+					if username != "" {
+						api.HandleConfig(username)
+					}
+				} else if strings.HasPrefix(urlPath, "user/") {
+					urlPath = urlPath[5:]
+					if urlPath == "course" {
+						chatId := r.URL.Query().Get("chatId")
+						if chatId != "" {
+							if r.Method == http.MethodPost {
+								cfg := config.GetAppConfig().GetUserConfig(username).GetCourseConfig(chatId)
+								var data core.JObject
+								err := api.ParseJson(&data)
+								if api.Err(err) {
+									return
+								}
+								save := false
+								for k, v := range data {
+									if !config.ValidKeyValue(k, v) {
+										api.AddMsg(fmt.Sprintf("无效键值：%s", k))
+										continue
+									}
+									save = true
+									cfg.Set(k, v)
+								}
+								if save && api.Err(cfg.Save()) {
+									return
+								}
+								api.Ok = api.Msg == ""
+							}
+						}
+					}
 				}
 			}
+			return
 		}
 	}
 	w.WriteHeader(http.StatusBadRequest)
