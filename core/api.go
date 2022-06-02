@@ -95,10 +95,10 @@ func (a *Api) HandleConfig(name string) {
 	case http.MethodGet:
 		data := map[string]any{}
 		a.O(data)
-		var fun func(*config.Config, map[string]any, bool)
-		fun = func(cfg *config.Config, data map[string]any, isCourses bool) {
+		var fun func(*config.Config, map[string]any, int)
+		fun = func(cfg *config.Config, data map[string]any, lv int) {
 			for _, k := range cfg.Keys() {
-				if !isApp && !isCourses && k == config.Courses {
+				if !isApp && lv != config.ValueLevelCourse && k == config.Courses {
 					courses := cfg.GetCourses()
 					m := map[string]map[string]any{}
 					data[k] = m
@@ -107,7 +107,7 @@ func (a *Api) HandleConfig(name string) {
 						cfg := cfg.GetCourseConfig(chatId)
 						data := map[string]any{}
 						m[chatId] = data
-						fun(cfg, data, true)
+						fun(cfg, data, config.ValueLevelCourse)
 					}
 					cfg.Mutex.RUnlock()
 					continue
@@ -126,7 +126,7 @@ func (a *Api) HandleConfig(name string) {
 				data[k] = v
 			}
 		}
-		fun(cfg, data, false)
+		fun(cfg, data, lv)
 	case http.MethodPost:
 		a.SetConfigValues(cfg)
 	default:
