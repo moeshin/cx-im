@@ -20,6 +20,11 @@ import (
 	"strconv"
 )
 
+var (
+	regexpCourses = regexp.MustCompile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
+	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
+)
+
 type CxClient struct {
 	Username string
 	Password string
@@ -29,11 +34,6 @@ type CxClient struct {
 	Client   *http.Client
 	Log      *LogE
 }
-
-var (
-	regexpCourses = regexp.MustCompile(`<a href="https://mooc1\.chaoxing\.com/visit/stucoursemiddle\?courseid=(\d+?)&clazzid=(\d+)&cpi=\d+["&]`)
-	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
-)
 
 func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
 	jar, err := cookiejar.New(nil)
@@ -68,7 +68,7 @@ func NewClientFromConfig(cfg *config.Config, logE *LogE) (*CxClient, error) {
 	if password == "" {
 		return nil, errors.New("密码不存在")
 	}
-	fid := config.GodCI(cfg, config.Password, "")
+	fid := config.GodCI(cfg, config.Fid, "")
 	return NewClient(username, password, fid, logE)
 }
 
