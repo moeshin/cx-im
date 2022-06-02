@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -118,12 +120,43 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "user":
 			username := r.URL.Query().Get("username")
 			if username != "" {
+				root := urlPath == "user"
+				if root {
+					switch r.Method {
+					case http.MethodPost:
+						data, err := ioutil.ReadAll(r.Body)
+						if api.Err(err) {
+							return
+						}
+						query := r.URL.Query()
+						password := string(data)
+						fid := query.Get("fid")
+						def := false
+						{
+							s := query.Get("default")
+							if s != "" {
+								def, err = strconv.ParseBool(s)
+								if api.Err(err) {
+									return
+								}
+							}
+						}
+						err = initUser(username, password, fid, def)
+						api.Ok = true
+						api.Err(err)
+						return
+					case http.MethodDelete:
+						delete(config.UsersConfig, username)
+						api.Err(os.RemoveAll(config.GetUserDir(username)))
+						return
+					}
+				}
 				v, ok := config.UsersConfig[username]
 				if !ok {
 					api.OE("用户不存在：" + username)
 					return
 				}
-				if urlPath == "user" {
+				if root {
 					v.User.Mutex.RLock()
 					api.O(v.User.Running)
 					v.User.Mutex.RUnlock()

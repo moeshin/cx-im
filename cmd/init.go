@@ -24,35 +24,53 @@ var initCmd = &cobra.Command{
 		if argc > 2 {
 			fid = args[2]
 		}
-
-		appConfig := config.GetAppConfig()
-		userConfig := appConfig.GetUserConfig(username)
-		client, err := core.NewClient(username, password, fid, nil)
-		errs.Panic(err)
-		errs.Panic(client.Login())
-
-		userConfig.Set(config.Username, username)
-		userConfig.Set(config.Password, password)
-		userConfig.Set(config.Fid, fid)
-
-		courses := userConfig.GetCourses()
-		errs.Panic(client.GetCourses(courses))
-		errs.Panic(userConfig.Save())
-
-		save := appConfig.New
-		isSetDefault, err := cmd.Flags().GetBool("default")
+		def, err := cmd.Flags().GetBool("default")
 		errs.Print(err)
-		if isSetDefault || !appConfig.HasDefaultUsername() {
-			appConfig.SetDefaultUsername(username)
-			save = true
-		}
-		if save {
-			errs.Panic(appConfig.Save())
-		}
+		errs.Panic(initUser(username, password, fid, def))
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().BoolP("default", "d", false, "设置为默认账号")
+}
+
+func initUser(username string, password string, fid string, def bool) error {
+	appConfig := config.GetAppConfig()
+	userConfig := appConfig.GetUserConfig(username)
+	client, err := core.NewClient(username, password, fid, nil)
+	if err != nil {
+		return err
+	}
+	err = client.Login()
+	if err != nil {
+		return err
+	}
+
+	userConfig.Set(config.Username, username)
+	userConfig.Set(config.Password, password)
+	userConfig.Set(config.Fid, fid)
+
+	courses := userConfig.GetCourses()
+	err = client.GetCourses(courses)
+	if err != nil {
+		return err
+	}
+	err = userConfig.Save()
+	if err != nil {
+		return err
+	}
+
+	save := appConfig.New
+	if def || !appConfig.HasDefaultUsername() {
+		appConfig.SetDefaultUsername(username)
+		save = true
+	}
+	if save {
+		err = appConfig.Save()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
