@@ -118,7 +118,7 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	log.Println("保存配置：", c.Path)
+	log.Println("保存配置：" + c.Path)
 	return ioutil.WriteFile(c.Path, data, fs.ModePerm)
 }
 

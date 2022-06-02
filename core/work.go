@@ -155,7 +155,7 @@ func (w *Work) onMessage(msg []byte, startTime int64) {
 		w.Log.Println("IM 解析失败，无法获取 chatId")
 		return
 	}
-	w.Log.Println("IM chatId:", chatId)
+	w.Log.Println("chatId:", chatId)
 
 	sessionEnd := 11
 	buf := im.NewBuf(msg)
@@ -207,7 +207,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 
 	logN := w.Log.NewLogN(w.Config)
 	defer w.Log.ErrClose(logN)
-	logN.Println("IM chatId:", chatId)
+	logN.Println("chatId:", chatId)
 
 	buf = im.NewBuf(buf.Buf[buf.Pos+1:])
 	att, err := buf.ReadAttachment()
@@ -362,14 +362,14 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 	}
 
 	taskTime := int64(GodJObjectI(active, "starttime", 0.))
-	logN.Println("任务时间：", taskTime)
+	logN.Printf("任务时间戳：%d", taskTime)
 
 	signOptions := work.Opts
 	switch signType {
 	case SignTypePhoto:
 		imageId := work.GetImageId(time.UnixMilli(taskTime), w.Client)
 		signOptions.ImageId = imageId
-		logN.Println("预览：", config.GetSignPhotoImageUrl(imageId, false))
+		logN.Println("预览：" + config.GetSignPhotoImageUrl(imageId, false))
 		break
 	case SignTypeLocation:
 		if GodJObjectI(active, "ifopenAddress", 0.) != 0 {
@@ -415,7 +415,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		content = "签到完成"
 	case "您已签到过了":
 	default:
-		logN.Println("签到失败：", content)
+		logN.Println("签到失败：" + content)
 		return
 	}
 	logN.State = NotifySignOk

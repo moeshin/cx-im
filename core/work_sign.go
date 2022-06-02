@@ -33,9 +33,9 @@ func (w *WorkSign) SetSignType(signType SignType, active JObject) bool {
 	}
 	switch signType {
 	case SignTypeGesture:
-		w.Log.Println("手势：", getSignCode())
+		w.Log.Println("手势：" + getSignCode())
 	case SignTypeCode:
-		w.Log.Println("签到码：", getSignCode())
+		w.Log.Println("签到码：" + getSignCode())
 	case SignTypeQR:
 		w.Log.Println("目前无法二维码签到")
 		return true
@@ -66,7 +66,7 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 	if l == 1 {
 		path = images[0]
 	} else {
-		w.Log.Println("将从这些图片中随机选择一张进行图片签到：", images)
+		w.Log.Printf("将从这些图片中随机选择一张进行图片签到：%v", images)
 		i := 0
 		b, err := rand.Int(rand.Reader, big.NewInt(int64(l)))
 		if err != nil {
@@ -77,7 +77,7 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 		path = images[i]
 	}
 	if path != "" {
-		w.Log.Println("将使用这张照片进行图片签到：", path)
+		w.Log.Println("将使用这张照片进行图片签到：" + path)
 	}
 	return path
 }

@@ -65,10 +65,10 @@ var testCmd = &cobra.Command{
 			return
 		}
 		if signType == core.SignTypePhoto {
-			logN.Println("模拟时间", now.Format(config.TimeLayout))
+			logN.Println("模拟时间：" + now.Format(config.TimeLayout))
 			imageId := work.GetImageId(now, nil)
-			logN.Println("预览（略缩图）", config.GetSignPhotoImageUrl(imageId, false))
-			logN.Println("预览（原图）", config.GetSignPhotoImageUrl(imageId, true))
+			logN.Println("预览（略缩图）：" + config.GetSignPhotoImageUrl(imageId, false))
+			logN.Println("预览（原图）：" + config.GetSignPhotoImageUrl(imageId, true))
 		}
 		logN.State = core.NotifySignOk
 		opts := work.Opts

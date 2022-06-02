@@ -50,7 +50,7 @@ func webRun() {
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
-		log.Println("载入用户配置：", name)
+		log.Println("载入用户配置：" + name)
 		userConfig := appConfig.GetUserConfig(name)
 		userConfig.User = &config.User{
 			Running: false,
@@ -67,7 +67,13 @@ func webRun() {
 		webPort = int(config.GodCI(appConfig, config.WebPort, config.DefaultWebPort))
 	}
 	webAddress := fmt.Sprintf("%s:%d", webHost, webPort)
-	log.Println("网页监听：", webAddress)
+	{
+		s := webAddress
+		if webHost == "" {
+			s = "*" + s
+		}
+		log.Println("网页监听：" + s)
+	}
 
 	webHandler := &WebHandler{}
 	errs.Panic(http.ListenAndServe(webAddress, webHandler))

@@ -128,7 +128,7 @@ const (
 var regexpTime = regexp.MustCompile(`^(\d+):(\d+)$`)
 
 func matchSignPhotoErr(rule string) {
-	log.Println("拍照签到参数错误：", rule)
+	log.Println("拍照签到参数错误：" + rule)
 }
 
 func parseSignPhotoTime(tm string) int64 {
