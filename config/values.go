@@ -30,7 +30,7 @@ var KeyValues = map[string]int{
 	"SmtpPort":     ValueLevelAUC | ValueNumber,
 	"SmtpUsername": ValueLevelAUC | ValueString,
 	"SmtpPassword": ValueLevelAUC | ValueString | ValuePassword,
-	"SmtpSSL":      ValueBool,
+	"SmtpSSL":      ValueLevelAUC | ValueBool,
 
 	"NotifyPushPlusToken":     ValueLevelAUC | ValueString | ValuePassword,
 	"NotifyBarkApi":           ValueLevelAUC | ValueString | ValuePassword,
