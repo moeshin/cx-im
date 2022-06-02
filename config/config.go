@@ -249,13 +249,25 @@ func GetAppConfig() *Config {
 }
 
 func (c *Config) GetUserConfig(user string) *Config {
-	if UsersConfig == nil {
-		return Load(GetUserConfigPath(user), c)
-	}
-	v, ok := UsersConfig.Map[user]
-	if !ok {
+	var v *Config
+	fn := func() {
 		v = Load(GetUserConfigPath(user), c)
-		UsersConfig.Map[user] = v
+		if UsersConfig != nil {
+			v.User = &User{
+				Running: false,
+				Mutex:   &sync.RWMutex{},
+			}
+		}
+	}
+	if UsersConfig == nil {
+		fn()
+	} else {
+		var ok bool
+		v, ok = UsersConfig.Get(user)
+		if !ok {
+			fn()
+			UsersConfig.Set(user, v)
+		}
 	}
 	return v
 }

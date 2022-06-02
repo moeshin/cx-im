@@ -12,7 +12,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 var webCmd = &cobra.Command{
@@ -54,11 +53,7 @@ func webRun() {
 			continue
 		}
 		log.Println("载入用户配置：" + name)
-		userConfig := appConfig.GetUserConfig(name)
-		userConfig.User = &config.User{
-			Running: false,
-			Mutex:   &sync.RWMutex{},
-		}
+		appConfig.GetUserConfig(name)
 	}
 
 	webHost := webArgs.host
@@ -154,6 +149,7 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						config.UsersConfig.Mutex.Lock()
 						delete(config.UsersConfig.Map, username)
 						config.UsersConfig.Mutex.Unlock()
+						api.Ok = true
 						api.Err(os.RemoveAll(config.GetUserDir(username)))
 						return
 					}
