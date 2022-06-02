@@ -84,7 +84,8 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer api.Response(w)
 		urlPath = urlPath[5:]
 		log.Println(r.Method, urlPath)
-		if urlPath == "users" {
+		switch urlPath {
+		case "users":
 			data := map[string]bool{}
 			for k, v := range config.UsersConfig {
 				v.User.Mutex.RLock()
@@ -93,32 +94,70 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			api.O(data)
 			return
-		}
-		if strings.HasPrefix(urlPath, "cfg/") {
-			urlPath = urlPath[4:]
-			if urlPath == "app" {
-				api.HandleConfig("")
-			} else {
-				username := r.URL.Query().Get("username")
+		case "users/start":
+			fallthrough
+		case "users/stop":
+			run := urlPath[6:] == "start"
+			for _, v := range config.UsersConfig {
+				v.User.Mutex.RLock()
+				v.User.Running = run
+				v.User.Mutex.RUnlock()
+			}
+			api.Ok = true
+			return
+		case "user/start":
+			fallthrough
+		case "user/stop":
+			fallthrough
+		case "user":
+			username := r.URL.Query().Get("username")
+			if username != "" {
+				v, ok := config.UsersConfig[username]
+				if !ok {
+					api.OE("用户不存在：" + username)
+					return
+				}
 				if urlPath == "user" {
-					if username != "" {
-						api.HandleConfig(username)
+					v.User.Mutex.RLock()
+					api.O(v.User.Running)
+					v.User.Mutex.RUnlock()
+				} else {
+					run := urlPath[5:] == "start"
+					v.User.Mutex.Lock()
+					ok = v.User.Running != run
+					if ok {
+						v.User.Running = run
 					}
-				} else if strings.HasPrefix(urlPath, "user/") {
-					urlPath = urlPath[5:]
-					if urlPath == "course" {
+					api.O(ok)
+					v.User.Mutex.Unlock()
+				}
+				return
+			}
+		default:
+			if strings.HasPrefix(urlPath, "cfg/") {
+				urlPath = urlPath[4:]
+				if urlPath == "app" {
+					api.HandleConfig("")
+					return
+				} else {
+					username := r.URL.Query().Get("username")
+					if urlPath == "user" {
+						if username != "" {
+							api.HandleConfig(username)
+							return
+						}
+					} else if urlPath == "user/course" && r.Method == http.MethodPost {
 						chatId := r.URL.Query().Get("chatId")
 						if chatId != "" {
-							if r.Method == http.MethodPost {
-								cfg := config.GetAppConfig().GetUserConfig(username).GetCourseConfig(chatId)
-								api.SetConfigValues(cfg)
-							}
+							cfg := config.GetAppConfig().GetUserConfig(username).GetCourseConfig(chatId)
+							api.SetConfigValues(cfg)
+							return
 						}
 					}
 				}
 			}
-			return
 		}
+		api.Bad()
 	}
 	w.WriteHeader(http.StatusBadRequest)
 }
