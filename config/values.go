@@ -65,12 +65,12 @@ var KeyValues = map[string]int{
 	"ClassName":  ValueLevelCourse | ValueString,
 }
 
-func ValidKeyValue(k string, v any) bool {
+func ValidKeyValue(lv int, k string, v any) bool {
 	typ, ok := KeyValues[k]
 	if !ok {
 		return false
 	}
-	if typ == typ|ValueHide {
+	if typ != typ|lv || typ == typ|ValueHide {
 		return false
 	}
 	if typ == typ|ValueBool {

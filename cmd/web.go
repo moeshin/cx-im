@@ -118,7 +118,7 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								}
 								save := false
 								for k, v := range data {
-									if !config.ValidKeyValue(k, v) {
+									if !config.ValidKeyValue(config.ValueLevelCourse, k, v) {
 										api.AddMsg(fmt.Sprintf("无效键值：%s", k))
 										continue
 									}

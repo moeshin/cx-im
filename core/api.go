@@ -84,7 +84,11 @@ func (a *Api) AddMsg(msg string) {
 func (a *Api) HandleConfig(name string) {
 	cfg := config.GetAppConfig()
 	isApp := name == ""
-	if !isApp {
+	var lv int
+	if isApp {
+		lv = config.ValueLevelApp
+	} else {
+		lv = config.ValueLevelUser
 		cfg = cfg.GetUserConfig(name)
 	}
 	switch a.req.Method {
@@ -109,7 +113,7 @@ func (a *Api) HandleConfig(name string) {
 					continue
 				}
 				typ, ok := config.KeyValues[k]
-				if !ok || typ == typ|config.ValueHide {
+				if !ok || typ != typ|lv || typ == typ|config.ValueHide {
 					continue
 				}
 				v, ok := cfg.GetC(k)
@@ -131,7 +135,7 @@ func (a *Api) HandleConfig(name string) {
 		}
 		save := false
 		for k, v := range data {
-			if !config.ValidKeyValue(k, v) {
+			if !config.ValidKeyValue(lv, k, v) {
 				a.AddMsg(fmt.Sprintf("无效键值：%s", k))
 				continue
 			}
