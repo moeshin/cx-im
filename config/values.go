@@ -11,52 +11,58 @@ const (
 	ValueJson
 	ValueArray
 	//ValueAny
+
+	ValueLevelApp
+	ValueLevelUser
+	ValueLevelCourse
+	ValueLevelAU  = ValueLevelApp | ValueLevelUser
+	ValueLevelAUC = ValueLevelAU | ValueLevelCourse
 )
 
 var KeyValues = map[string]int{
-	"DefaultUsername": ValueString,
+	"DefaultUsername": ValueLevelApp | ValueString,
 
-	"WebHost": ValueString,
-	"WebPort": ValueNumber,
+	"WebHost": ValueLevelApp | ValueString,
+	"WebPort": ValueLevelApp | ValueNumber,
 
-	"NotifyEmail":  ValueString,
-	"SmtpHost":     ValueString,
-	"SmtpPort":     ValueNumber,
-	"SmtpUsername": ValueString,
-	"SmtpPassword": ValueString | ValuePassword,
+	"NotifyEmail":  ValueLevelAUC | ValueString,
+	"SmtpHost":     ValueLevelAUC | ValueString,
+	"SmtpPort":     ValueLevelAUC | ValueNumber,
+	"SmtpUsername": ValueLevelAUC | ValueString,
+	"SmtpPassword": ValueLevelAUC | ValueString | ValuePassword,
 	"SmtpSSL":      ValueBool,
 
-	"NotifyPushPlusToken":     ValueString | ValuePassword,
-	"NotifyBarkApi":           ValueString | ValuePassword,
-	"NotifyTelegramBotToken":  ValueString | ValuePassword,
-	"NotifyTelegramBotChatId": ValueString,
+	"NotifyPushPlusToken":     ValueLevelAUC | ValueString | ValuePassword,
+	"NotifyBarkApi":           ValueLevelAUC | ValueString | ValuePassword,
+	"NotifyTelegramBotToken":  ValueLevelAUC | ValueString | ValuePassword,
+	"NotifyTelegramBotChatId": ValueLevelAUC | ValueString,
 
-	"NotifySign":   ValueBool,
-	"NotifyActive": ValueBool,
+	"NotifySign":   ValueLevelAUC | ValueBool,
+	"NotifyActive": ValueLevelAUC | ValueBool,
 
-	"SignAddress":   ValueString,
-	"SignLongitude": ValueNumber,
-	"SignLatitude":  ValueNumber,
-	"SignIp":        ValueString,
+	"SignAddress":   ValueLevelAUC | ValueString,
+	"SignLongitude": ValueLevelAUC | ValueNumber,
+	"SignLatitude":  ValueLevelAUC | ValueNumber,
+	"SignIp":        ValueLevelAUC | ValueString,
 
-	"SignDelay":    ValueNumber,
-	"SignEnable":   ValueBool,
-	"SignNormal":   ValueBool,
-	"SignPhoto":    ValueBool | ValueString | ValueArray | ValueJson,
-	"SignGesture":  ValueBool,
-	"SignLocation": ValueBool,
-	"SignCode":     ValueBool,
+	"SignDelay":    ValueLevelAUC | ValueNumber,
+	"SignEnable":   ValueLevelAUC | ValueBool,
+	"SignNormal":   ValueLevelAUC | ValueBool,
+	"SignPhoto":    ValueLevelAUC | ValueBool | ValueString | ValueArray | ValueJson,
+	"SignGesture":  ValueLevelAUC | ValueBool,
+	"SignLocation": ValueLevelAUC | ValueBool,
+	"SignCode":     ValueLevelAUC | ValueBool,
 
-	"Username": ValueString,
-	"Password": ValueString | ValuePassword,
-	"Fid":      ValueString,
+	"Username": ValueLevelUser | ValueString,
+	"Password": ValueLevelUser | ValueString | ValuePassword,
+	"Fid":      ValueLevelUser | ValueString,
 
-	"Courses":    ValueJson | ValueHide,
-	"ChatId":     ValueString | ValueHide,
-	"CourseId":   ValueString,
-	"ClassId":    ValueString,
-	"CourseName": ValueString,
-	"ClassName":  ValueString,
+	"Courses":    ValueLevelUser | ValueJson | ValueHide,
+	"ChatId":     ValueLevelCourse | ValueString | ValueHide,
+	"CourseId":   ValueLevelCourse | ValueString,
+	"ClassId":    ValueLevelCourse | ValueString,
+	"CourseName": ValueLevelCourse | ValueString,
+	"ClassName":  ValueLevelCourse | ValueString,
 }
 
 func ValidKeyValue(k string, v any) bool {
