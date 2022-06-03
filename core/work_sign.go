@@ -44,7 +44,7 @@ func (w *WorkSign) SetSignType(signType SignType, active JObject) bool {
 }
 
 func (w *WorkSign) IsSkip() bool {
-	if config.GodRI(w.Cfg, config.SignEnable, false) {
+	if !config.GodRI(w.Cfg, config.SignEnable, false) {
 		w.Log.Println("因用户配置", config.SignEnable, "跳过签到")
 		return true
 	}
