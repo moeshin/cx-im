@@ -15,16 +15,18 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type Work struct {
-	Config *config.Config
-	Client *CxClient
-	Conn   *websocket.Conn
-	Done   chan struct{}
-	Log    *LogE
-	User   string
+	Config      *config.Config
+	Client      *CxClient
+	Conn        *websocket.Conn
+	Done        chan struct{}
+	Log         *LogE
+	User        string
+	ActiveCache *ActiveCache
 }
 
 func NewWork(cfg *config.Config, writer io.Writer) *Work {
@@ -38,6 +40,10 @@ func NewWork(cfg *config.Config, writer io.Writer) *Work {
 		Config: cfg,
 		Log: &LogE{
 			Logger: logger,
+		},
+		ActiveCache: &ActiveCache{
+			Mutex: &sync.Mutex{},
+			Map:   map[string]int64{},
 		},
 	}
 }
@@ -290,6 +296,11 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		return
 	}
 	logN.Println("activeId:", activeId)
+	if w.ActiveCache.Add(activeId) {
+		logN.Skip()
+		logN.Println("该活动已处理")
+		return
+	}
 
 	courseInfo, ok := GodJObject(attCourse, "courseInfo", map[string]any{})
 	if !ok {

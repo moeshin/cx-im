@@ -318,8 +318,15 @@ func (l *LogN) IsSkip(key string) bool {
 	return b
 }
 
-func (l *LogN) Notify() error {
+func (l *LogN) Skip() {
 	l.Writer.Skip = true
+}
+
+func (l *LogN) Notify() error {
+	if l.Writer.Skip {
+		return nil
+	}
+	l.Skip()
 	var n string
 	switch l.State {
 	case NotifyActive:
