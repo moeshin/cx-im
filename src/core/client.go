@@ -2,8 +2,8 @@ package core
 
 import (
 	"bytes"
-	"cx-im/config"
-	"cx-im/model"
+	"cx-im/src/config"
+	"cx-im/src/model"
 	"encoding/json"
 	"errors"
 	"fmt"

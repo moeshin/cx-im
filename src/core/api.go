@@ -1,7 +1,7 @@
 package core
 
 import (
-	"cx-im/config"
+	"cx-im/src/config"
 	"encoding/json"
 	"fmt"
 	"github.com/moeshin/go-errs"

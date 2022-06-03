@@ -3,7 +3,7 @@ package core
 import (
 	"bytes"
 	"crypto/rand"
-	"cx-im/config"
+	"cx-im/src/config"
 	"encoding/json"
 	"errors"
 	"fmt"

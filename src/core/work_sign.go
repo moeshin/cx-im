@@ -2,8 +2,8 @@ package core
 
 import (
 	"crypto/rand"
-	"cx-im/config"
-	"cx-im/model"
+	"cx-im/src/config"
+	"cx-im/src/model"
 	"math/big"
 	"time"
 )

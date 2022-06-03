@@ -1,9 +1,9 @@
 package core
 
 import (
-	"cx-im/config"
-	"cx-im/im"
-	"cx-im/im/cmd_course_chat_feedback"
+	"cx-im/src/config"
+	"cx-im/src/im"
+	"cx-im/src/im/cmd_course_chat_feedback"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"

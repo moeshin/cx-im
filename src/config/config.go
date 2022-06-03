@@ -1,7 +1,7 @@
 package config
 
 import (
-	"cx-im/model"
+	"cx-im/src/model"
 	"encoding/json"
 	"github.com/moeshin/go-errs"
 	"github.com/moeshin/go-orderedmap"

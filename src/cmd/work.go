@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"cx-im/core"
+	"cx-im/src/core"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
 )

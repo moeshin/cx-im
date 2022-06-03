@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cx-im/config"
+	"cx-im/src/config"
 	"github.com/moeshin/go-errs"
 	"os"
 	"os/exec"

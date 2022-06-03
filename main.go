@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cx-im/cmd"
+	"cx-im/src/cmd"
 	"log"
 )
 

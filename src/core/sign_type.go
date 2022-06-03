@@ -1,6 +1,8 @@
 package core
 
-import "cx-im/config"
+import (
+	"cx-im/src/config"
+)
 
 type SignType = int8
 

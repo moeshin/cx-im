@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"cx-im/config"
-	"cx-im/core"
+	"cx-im/src/config"
+	"cx-im/src/core"
 	"fmt"
 	"github.com/spf13/cobra"
 	"log"

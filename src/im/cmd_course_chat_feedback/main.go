@@ -1,7 +1,7 @@
 package cmd_course_chat_feedback
 
 import (
-	"cx-im/im"
+	"cx-im/src/im"
 	"errors"
 	"strconv"
 )
