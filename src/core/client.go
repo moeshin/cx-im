@@ -2,8 +2,10 @@ package core
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"cx-im/src/config"
 	"cx-im/src/model"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -333,6 +335,37 @@ func (c *CxClient) UploadImage(filename string) (string, error) {
 		return "", errors.New(v.Msg)
 	}
 	return v.ObjectId, nil
+}
+
+func (c *CxClient) GetImageId(filename string) (string, error) {
+	CacheImage.Mutex.Lock()
+	defer CacheImage.Mutex.Unlock()
+	i, err := os.Stat(filename)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer c.Log.ErrClose(f)
+	h := sha256.New()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+	key := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(i.Size(), 10)
+	v, ok := CacheImage.Map[key]
+	if ok {
+		return v, nil
+	}
+	v, err = c.UploadImage(filename)
+	if err != nil {
+		return "", err
+	}
+	CacheImage.Map[key] = v
+	CacheImage.Save = true
+	return v, nil
 }
 
 func testResponseStatus(resp *http.Response) error {

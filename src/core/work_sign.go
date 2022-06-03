@@ -89,7 +89,7 @@ func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 		client, err = NewClientFromConfig(w.Cfg.Parent, w.Log)
 	}
 	if err == nil {
-		id, err := client.UploadImage(path)
+		id, err := client.GetImageId(path)
 		if err == nil {
 			return id
 		}
