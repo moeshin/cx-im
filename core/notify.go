@@ -348,7 +348,14 @@ func (l *LogN) Notify() error {
 	if err != nil {
 		return err
 	}
-	content := l.Writer.Tag + "\n时间：" + time.Now().Format(config.TimeLayout) + "\n" + string(data)
+	cfg := l.Cfg
+	if cfg.Path == "" {
+		cfg = cfg.Parent
+	}
+	content := l.Writer.Tag +
+		"\n用户：" + config.GodCI(cfg, config.Username, "") +
+		"\n时间：" + time.Now().Format(config.TimeLayout) +
+		"\n" + string(data)
 	if l.header != "" {
 		content = l.header + "\n" + content
 	}

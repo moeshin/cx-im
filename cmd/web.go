@@ -147,6 +147,7 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								}
 							}
 						}
+						log.Println("创建用户：" + username)
 						err = initUser(username, password, fid, def)
 						api.Ok = true
 						api.Err(err)
