@@ -29,7 +29,7 @@ type Work struct {
 	Done        chan struct{}
 	Log         *LogE
 	User        string
-	ActiveCache *ActiveCache
+	CacheActive *CacheActive
 	HeartTicker *time.Ticker
 }
 
@@ -45,7 +45,7 @@ func NewWork(cfg *config.Config, writer io.Writer) *Work {
 		Log: &LogE{
 			Logger: logger,
 		},
-		ActiveCache: &ActiveCache{
+		CacheActive: &CacheActive{
 			Mutex: &sync.Mutex{},
 			Map:   map[string]int64{},
 		},
@@ -312,7 +312,7 @@ func (w *Work) onSession(buf *im.Buf, sessionEnd *int, chatId string, startTime 
 		return
 	}
 	logN.Println("activeId:", activeId)
-	if w.ActiveCache.Add(activeId) {
+	if w.CacheActive.Add(activeId) {
 		logN.Skip()
 		logN.Println("该活动已处理")
 		return

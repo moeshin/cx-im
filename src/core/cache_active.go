@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-type ActiveCache struct {
+type CacheActive struct {
 	Mutex *sync.Mutex
 	Map   map[string]int64
 }
 
-func (c *ActiveCache) clean() {
+func (c *CacheActive) clean() {
 	t := time.Now().UnixMilli() - (time.Second * 30).Milliseconds()
 	for activeId, ts := range c.Map {
 		if ts <= t {
@@ -19,7 +19,7 @@ func (c *ActiveCache) clean() {
 	}
 }
 
-func (c *ActiveCache) Add(activeId string) bool {
+func (c *CacheActive) Add(activeId string) bool {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	c.clean()
