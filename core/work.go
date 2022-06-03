@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+const HeartTimeout = 30 * time.Second
+
 type Work struct {
 	Config      *config.Config
 	Client      *CxClient
@@ -28,6 +30,7 @@ type Work struct {
 	Log         *LogE
 	User        string
 	ActiveCache *ActiveCache
+	HeartTicker *time.Ticker
 }
 
 func NewWork(cfg *config.Config, writer io.Writer) *Work {
@@ -91,6 +94,15 @@ func (w *Work) Connect() error {
 		}
 	}()
 
+	w.HeartTicker = time.NewTicker(HeartTimeout)
+	defer w.HeartTicker.Stop()
+	go func() {
+		for {
+			<-w.HeartTicker.C
+			w.Log.Println("IM 30 秒内，未收到心跳消息")
+		}
+	}()
+
 	for {
 		select {
 		case <-w.Done:
@@ -124,7 +136,7 @@ func (w *Work) onMsg(typ int, msg []byte) {
 	startTime := time.Now().UnixMilli()
 	length := len(msg)
 	if typ == websocket.TextMessage && length == 1 && msg[0] == 'h' {
-		// TODO 心跳包
+		w.HeartTicker.Reset(HeartTimeout)
 	} else {
 		w.Log.Println(fmt.Sprintf("IM 接收到消息 %d %d：", typ, len(msg)) + string(msg))
 	}
