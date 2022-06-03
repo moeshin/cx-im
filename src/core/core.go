@@ -51,3 +51,7 @@ func GodJObjectI[T JValue](obj JObject, key string, def T) T {
 	v, _ := GodJObject(obj, key, def)
 	return v
 }
+
+func SliceRemove[T any](slice []T, i int) []T {
+	return append(slice[:i], slice[i+1:]...)
+}

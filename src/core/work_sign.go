@@ -5,6 +5,7 @@ import (
 	"cx-im/src/config"
 	"cx-im/src/model"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -63,18 +64,25 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 		return ""
 	}
 	var path string
-	if l == 1 {
-		path = images[0]
-	} else {
-		w.Log.Printf("将从这些图片中随机选择一张进行图片签到：%v", images)
+	w.Log.Printf("将从这些图片中随机选择一张进行图片签到：%v", images)
+	for {
 		i := 0
-		b, err := rand.Int(rand.Reader, big.NewInt(int64(l)))
-		if err != nil {
-			w.Log.Println("随机失败", err)
-		} else {
-			i = int(b.Int64())
+		if l != 0 {
+			b, err := rand.Int(rand.Reader, big.NewInt(int64(l)))
+			if err != nil {
+				w.Log.Println("随机失败", err)
+			} else {
+				i = int(b.Int64())
+			}
 		}
 		path = images[i]
+		_, err := os.Stat(path)
+		if err == nil || l == 0 {
+			path = ""
+			break
+		}
+		images = SliceRemove(images, i)
+		l--
 	}
 	if path != "" {
 		w.Log.Println("将使用这张照片进行图片签到：" + path)
@@ -88,7 +96,7 @@ func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 	if client == nil {
 		client, err = NewClientFromConfig(w.Cfg.Parent, w.Log)
 	}
-	if err == nil {
+	if path != "" && err == nil {
 		id, err := client.GetImageId(path)
 		if err == nil {
 			return id
