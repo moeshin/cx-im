@@ -107,8 +107,14 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			config.UsersConfig.Mutex.RLock()
 			for _, v := range config.UsersConfig.Map {
 				v.User.Mutex.RLock()
-				v.User.Running = run
+				ok := v.User.Running != run
+				if ok {
+					v.User.Running = run
+				}
 				v.User.Mutex.RUnlock()
+				if ok && run {
+					go core.StartWork(v)
+				}
 			}
 			config.UsersConfig.Mutex.RUnlock()
 			api.Ok = true
@@ -172,6 +178,9 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 					api.O(ok)
 					v.User.Mutex.Unlock()
+					if ok && run {
+						go core.StartWork(v)
+					}
 				}
 				return
 			}

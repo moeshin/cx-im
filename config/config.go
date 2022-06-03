@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/moeshin/go-errs"
 	"github.com/moeshin/go-orderedmap"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -114,12 +113,12 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(dir, fs.ModePerm)
+	err = os.MkdirAll(dir, 0666)
 	if err != nil {
 		return err
 	}
 	log.Println("保存配置：" + c.Path)
-	return ioutil.WriteFile(c.Path, data, fs.ModePerm)
+	return ioutil.WriteFile(c.Path, data, 0666)
 }
 
 func (c *Config) String() string {

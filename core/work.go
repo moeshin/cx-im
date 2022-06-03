@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/moeshin/go-errs"
 	"io"
 	"log"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
@@ -37,6 +40,16 @@ func NewWork(cfg *config.Config, writer io.Writer) *Work {
 			Logger: logger,
 		},
 	}
+}
+
+func StartWork(cfg *config.Config) {
+	f, err := os.OpenFile(filepath.Join(filepath.Dir(cfg.Path), "log.txt"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if errs.Print(err) {
+		return
+	}
+	defer errs.Close(f)
+	work := NewWork(cfg, f)
+	errs.Print(work.Connect())
 }
 
 func (w *Work) Connect() error {
@@ -71,6 +84,12 @@ func (w *Work) Connect() error {
 	for {
 		select {
 		case <-w.Done:
+			user := w.Config.User
+			if user != nil {
+				user.Mutex.Lock()
+				user.Running = false
+				user.Mutex.Unlock()
+			}
 			return err
 		default:
 			user := w.Config.User
