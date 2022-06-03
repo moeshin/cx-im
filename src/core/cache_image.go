@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/moeshin/go-errs"
 	"io/ioutil"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -39,6 +40,7 @@ func saveCacheImage() {
 	if !CacheImage.Save {
 		return
 	}
+	log.Println("保存图片缓存：" + CacheImagePath)
 	data, err := json.MarshalIndent(CacheImage.Map, "", "  ")
 	if errs.Print(err) {
 		return
