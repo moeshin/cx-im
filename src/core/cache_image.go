@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"github.com/moeshin/go-errs"
+	"io/ioutil"
 	"os"
 	"sync"
 	"time"
@@ -20,7 +21,19 @@ var CacheImage = &struct {
 
 const CacheImagePath = "./cache-image.json"
 
-func SaveCacheImage() {
+func loadCacheImage() {
+	f, err := os.Open(CacheImagePath)
+	if err != nil {
+		return
+	}
+	defer errs.Close(f)
+	data, err := ioutil.ReadAll(f)
+	errs.Panic(err)
+	err = json.Unmarshal(data, &CacheImage.Map)
+	errs.Panic(err)
+}
+
+func saveCacheImage() {
 	CacheImage.Mutex.Lock()
 	defer CacheImage.Mutex.Unlock()
 	if !CacheImage.Save {
@@ -38,12 +51,13 @@ func SaveCacheImage() {
 }
 
 func init() {
+	loadCacheImage()
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			<-ticker.C
-			SaveCacheImage()
+			saveCacheImage()
 		}
 	}()
 }
