@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -49,11 +50,14 @@ func NewWork(cfg *config.Config, writer io.Writer) *Work {
 }
 
 func StartWork(cfg *config.Config) {
-	f, err := os.OpenFile(filepath.Join(filepath.Dir(cfg.Path), "log.txt"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(filepath.Join(filepath.Dir(cfg.Path), "log.txt"),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if errs.Print(err) {
 		return
 	}
 	defer errs.Close(f)
+	_, err = f.WriteString(strings.Repeat("-", 19) + "\n")
+	errs.Print(err)
 	work := NewWork(cfg, f)
 	errs.Print(work.Connect())
 }
