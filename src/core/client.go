@@ -17,9 +17,10 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -292,7 +293,7 @@ func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (st
 	if err != nil {
 		return "", nil, err
 	}
-	fw, err := writer.CreateFormFile("file", "image"+path.Ext(filename))
+	fw, err := writer.CreateFormFile("file", filename)
 	if err != nil {
 		return "", nil, err
 	}
@@ -311,6 +312,15 @@ func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (st
 }
 
 func (c *CxClient) UploadImage(filename string, file io.ReadCloser) (string, error) {
+	ext := filepath.Ext(filename)
+	if ext == "" || !strings.HasPrefix(ext, ".") {
+		return "", errors.New("图片扩展名错误：" + filename)
+	}
+	ext = ext[1:]
+	_, ok := config.ImageExt[ext[1:]]
+	if !ok {
+		return "", errors.New("不支持该图片扩展名：" + ext)
+	}
 	contentType, body, err := c.buildUploadImageBody(filename, file)
 	if err != nil {
 		return "", err
