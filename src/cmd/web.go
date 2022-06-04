@@ -185,6 +185,49 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				return
 			}
+		case "images":
+			if r.Method == http.MethodGet {
+				var ids []string
+				core.CacheImage.Mutex.Lock()
+				for _, id := range core.CacheImage.Map {
+					ids = append(ids, id)
+				}
+				core.CacheImage.Mutex.Unlock()
+				api.O(ids)
+				return
+			}
+		case "image":
+			if r.Method == http.MethodPost {
+				appConfig := config.GetAppConfig()
+				username := r.URL.Query().Get("username")
+				if username == "" {
+					username = appConfig.GetDefaultUsername()
+					if username == "" {
+						api.OE("没有指定账号和默认账号")
+						return
+					}
+				}
+				file, header, err := r.FormFile("image")
+				if api.Err(err) {
+					return
+				}
+				defer errs.Close(file)
+				userConfig := appConfig.GetUserConfig(username)
+				client, err := core.NewClientFromConfig(userConfig, nil)
+				if api.Err(err) {
+					return
+				}
+				err = client.Login()
+				if api.Err(err) {
+					return
+				}
+				id, err := client.GetImageId(header.Filename, file, header.Size)
+				if api.Err(err) {
+					return
+				}
+				api.O(id)
+				return
+			}
 		default:
 			if strings.HasPrefix(urlPath, "cfg/") {
 				urlPath = urlPath[4:]
@@ -210,6 +253,7 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		api.Bad()
+		return
 	}
 	w.WriteHeader(http.StatusBadRequest)
 }

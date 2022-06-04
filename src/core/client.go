@@ -273,7 +273,7 @@ func (c *CxClient) GetImageHostingToken() (string, error) {
 	return v.Token, nil
 }
 
-func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, error) {
+func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (string, io.Reader, error) {
 	token, err := c.GetImageHostingToken()
 	if err != nil {
 		return "", nil, err
@@ -296,11 +296,13 @@ func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, err
 	if err != nil {
 		return "", nil, err
 	}
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", nil, err
+	if file == nil {
+		file, err = os.Open(filename)
+		if err != nil {
+			return "", nil, err
+		}
+		defer c.Log.ErrClose(file)
 	}
-	defer c.Log.ErrClose(file)
 	_, err = io.Copy(fw, file)
 	if err != nil {
 		return "", nil, err
@@ -308,8 +310,8 @@ func (c *CxClient) buildUploadImageBody(filename string) (string, io.Reader, err
 	return writer.FormDataContentType(), body, nil
 }
 
-func (c *CxClient) UploadImage(filename string) (string, error) {
-	contentType, body, err := c.buildUploadImageBody(filename)
+func (c *CxClient) UploadImage(filename string, file io.ReadCloser) (string, error) {
+	contentType, body, err := c.buildUploadImageBody(filename, file)
 	if err != nil {
 		return "", err
 	}
@@ -337,34 +339,45 @@ func (c *CxClient) UploadImage(filename string) (string, error) {
 	return v.ObjectId, nil
 }
 
-func (c *CxClient) GetImageId(filename string) (string, error) {
+func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int64) (string, error) {
 	CacheImage.Mutex.Lock()
 	defer CacheImage.Mutex.Unlock()
-	i, err := os.Stat(filename)
-	if err != nil {
-		return "", err
+	hasFile := file != nil
+	if !hasFile {
+		i, err := os.Stat(filename)
+		if err != nil {
+			return "", err
+		}
+		file, err = os.Open(filename)
+		if err != nil {
+			return "", err
+		}
+		defer c.Log.ErrClose(file)
+		size = i.Size()
 	}
-	f, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	defer c.Log.ErrClose(f)
 	h := sha256.New()
-	_, err = io.Copy(h, f)
+	_, err := io.Copy(h, file)
 	if err != nil {
 		return "", err
 	}
-	key := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(i.Size(), 10)
+	key := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(size, 10)
 	v, ok := CacheImage.Map[key]
 	if ok {
 		return v, nil
 	}
-	v, err = c.UploadImage(filename)
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", err
+	}
+	v, err = c.UploadImage(filename, file)
 	if err != nil {
 		return "", err
 	}
 	CacheImage.Map[key] = v
 	CacheImage.Save = true
+	if hasFile {
+		saveCacheImage()
+	}
 	return v, nil
 }
 
