@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"cx-im/src/config"
+	"cx-im/src/core"
 	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
 	"log"
@@ -21,9 +22,9 @@ func Execute() {
 	}
 }
 
-func getUserConfig(cmd *cobra.Command, args []string) *config.Config {
+func getUser(cmd *cobra.Command, args []string) (*core.User, error) {
 	appConfig := config.GetAppConfig()
-	def := appConfig.GetDefaultUsername()
+	def := core.GetDefaultUsername()
 	var username string
 	if len(args) == 0 {
 		if def == "" {
@@ -36,15 +37,19 @@ func getUserConfig(cmd *cobra.Command, args []string) *config.Config {
 	} else {
 		username = args[0]
 	}
-	userConfig := appConfig.GetUserConfig(username)
+	user, err := core.GetUser(username)
+	if err != nil {
+		return nil, err
+	}
+	userConfig := user.Config
 	if userConfig.New {
 		log.Println("无该账号配置，请初始化")
 		log.Println(initCmd.Help())
 		os.Exit(1)
 	}
 	if def == "" {
-		appConfig.SetDefaultUsername(username)
+		core.SetDefaultUsername(username)
 		errs.Print(appConfig.Save())
 	}
-	return userConfig
+	return user, nil
 }

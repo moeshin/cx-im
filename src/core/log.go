@@ -7,9 +7,9 @@ import (
 	"net/http"
 )
 
-func NewLogger(out io.Writer, prefix string) *log.Logger {
+func NewLogger(out io.Writer) *log.Logger {
 	logger := log.Default()
-	return log.New(out, prefix+logger.Prefix(), logger.Flags())
+	return log.New(out, logger.Prefix(), logger.Flags())
 }
 
 type LogE struct {

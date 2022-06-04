@@ -38,22 +38,24 @@ func init() {
 }
 
 func webRun() {
-	config.InitUsersConfig()
+	core.InitUsers()
+	defer errs.Close(core.Users)
 	appConfig := config.GetAppConfig()
 
 	// 载入所有用户
-	dirs, err := os.ReadDir(config.UserDir)
+	dirs, err := os.ReadDir(core.UsersDir)
 	errs.Panic(err)
 	for _, dir := range dirs {
 		if !dir.IsDir() {
 			continue
 		}
-		name := dir.Name()
-		if strings.HasPrefix(name, ".") {
+		username := dir.Name()
+		if strings.HasPrefix(username, ".") {
 			continue
 		}
-		log.Println("载入用户配置：" + name)
-		appConfig.GetUserConfig(name)
+		log.Println("载入用户配置：" + username)
+		_, err = core.GetUser(username)
+		errs.Print(err)
 	}
 
 	webHost := webArgs.host
@@ -91,32 +93,32 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch urlPath {
 		case "users":
 			data := map[string]bool{}
-			config.UsersConfig.Mutex.RLock()
-			for k, v := range config.UsersConfig.Map {
-				v.User.Mutex.RLock()
-				data[k] = v.User.Running
-				v.User.Mutex.RUnlock()
+			core.Users.Mutex.RLock()
+			for k, v := range core.Users.Map {
+				v.Config.User.Mutex.RLock()
+				data[k] = v.Config.User.Running
+				v.Config.User.Mutex.RUnlock()
 			}
-			config.UsersConfig.Mutex.RUnlock()
+			core.Users.Mutex.RUnlock()
 			api.O(data)
 			return
 		case "users/start":
 			fallthrough
 		case "users/stop":
 			run := urlPath[6:] == "start"
-			config.UsersConfig.Mutex.RLock()
-			for _, v := range config.UsersConfig.Map {
-				v.User.Mutex.RLock()
-				ok := v.User.Running != run
+			core.Users.Mutex.RLock()
+			for _, user := range core.Users.Map {
+				user.Config.User.Mutex.RLock()
+				ok := user.Config.User.Running != run
 				if ok {
-					v.User.Running = run
+					user.Config.User.Running = run
 				}
-				v.User.Mutex.RUnlock()
+				user.Config.User.Mutex.RUnlock()
 				if ok && run {
-					go core.StartWork(v)
+					go core.StartWork(user)
 				}
 			}
-			config.UsersConfig.Mutex.RUnlock()
+			core.Users.Mutex.RUnlock()
 			api.Ok = true
 			return
 		case "user/start":
@@ -153,34 +155,41 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						api.Err(err)
 						return
 					case http.MethodDelete:
-						config.UsersConfig.Mutex.Lock()
-						delete(config.UsersConfig.Map, username)
-						config.UsersConfig.Mutex.Unlock()
-						api.Ok = true
-						api.Err(os.RemoveAll(config.GetUserDir(username)))
+						core.Users.Mutex.Lock()
+						user, ok := core.Users.Map[username]
+						if ok {
+							user.Config.User.Mutex.Lock()
+							user.Config.User.Running = false
+							user.Config.User.Mutex.Unlock()
+							errs.Close(user)
+							delete(core.Users.Map, username)
+							api.Ok = true
+							api.Err(os.RemoveAll(user.Dir.Path))
+						}
+						core.Users.Mutex.Unlock()
 						return
 					}
 				}
-				v, ok := config.UsersConfig.Get(username)
+				user, ok := core.Users.Get(username)
 				if !ok {
 					api.OE("用户不存在：" + username)
 					return
 				}
 				if root {
-					v.User.Mutex.RLock()
-					api.O(v.User.Running)
-					v.User.Mutex.RUnlock()
+					user.Config.User.Mutex.RLock()
+					api.O(user.Config.User.Running)
+					user.Config.User.Mutex.RUnlock()
 				} else {
 					run := urlPath[5:] == "start"
-					v.User.Mutex.Lock()
-					ok = v.User.Running != run
+					user.Config.User.Mutex.Lock()
+					ok = user.Config.User.Running != run
 					if ok {
-						v.User.Running = run
+						user.Config.User.Running = run
 					}
 					api.O(ok)
-					v.User.Mutex.Unlock()
+					user.Config.User.Mutex.Unlock()
 					if ok && run {
-						go core.StartWork(v)
+						go core.StartWork(user)
 					}
 				}
 				return
@@ -198,10 +207,9 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		case "image":
 			if r.Method == http.MethodPost {
-				appConfig := config.GetAppConfig()
 				username := r.URL.Query().Get("username")
 				if username == "" {
-					username = appConfig.GetDefaultUsername()
+					username = core.GetDefaultUsername()
 					if username == "" {
 						api.OE("没有指定账号和默认账号")
 						return
@@ -212,16 +220,11 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				defer errs.Close(file)
-				userConfig := appConfig.GetUserConfig(username)
-				client, err := core.NewClientFromConfig(userConfig, nil)
+				user, err := core.GetUser(username)
 				if api.Err(err) {
 					return
 				}
-				err = client.Login()
-				if api.Err(err) {
-					return
-				}
-				id, err := client.GetImageId(header.Filename, file, header.Size)
+				id, err := user.Client.GetImageId(header.Filename, file, header.Size)
 				if api.Err(err) {
 					return
 				}
@@ -244,8 +247,11 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					} else if urlPath == "user/course" && r.Method == http.MethodPost {
 						chatId := r.URL.Query().Get("chatId")
 						if chatId != "" {
-							cfg := config.GetAppConfig().GetUserConfig(username).GetCourseConfig(chatId)
-							api.SetConfigValues(cfg)
+							user, err := core.GetUser(username)
+							if api.Err(err) {
+								return
+							}
+							api.SetConfigValues(user.Config.GetCourseConfig(chatId))
 							return
 						}
 					}

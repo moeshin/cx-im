@@ -81,15 +81,20 @@ func (a *Api) AddMsg(msg string) {
 	a.Msg += msg
 }
 
-func (a *Api) HandleConfig(name string) {
-	cfg := config.GetAppConfig()
-	isApp := name == ""
+func (a *Api) HandleConfig(username string) {
+	isApp := username == ""
 	var lv int
+	var cfg *config.Config
 	if isApp {
 		lv = config.ValueLevelApp
+		cfg = config.GetAppConfig()
 	} else {
 		lv = config.ValueLevelUser
-		cfg = cfg.GetUserConfig(name)
+		user, err := GetUser(username)
+		if a.Err(err) {
+			return
+		}
+		cfg = user.Config
 	}
 	switch a.req.Method {
 	case http.MethodGet:

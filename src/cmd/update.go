@@ -18,9 +18,10 @@ var updateCmd = &cobra.Command{
 			updateAll()
 			return
 		}
-		userConfig := getUserConfig(cmd, args)
-		client, err := core.NewClientFromConfig(userConfig, nil)
+		user, err := getUser(cmd, args)
 		errs.Panic(err)
+		client := user.Client
+		userConfig := user.Config
 		errs.Panic(client.Login())
 		courses := userConfig.GetCourses()
 		errs.Panic(client.GetCourses(courses))
@@ -34,7 +35,7 @@ func init() {
 }
 
 func updateAll() {
-	dirs, err := os.ReadDir(config.UserDir)
+	dirs, err := os.ReadDir(config.DirUser)
 	errs.Panic(err)
 	for _, dir := range dirs {
 		if !dir.IsDir() {
@@ -44,14 +45,15 @@ func updateAll() {
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
-		userConfig := config.Load(config.GetUserConfigPath(name), nil)
-		client, err := core.NewClientFromConfig(userConfig, nil)
+		user, err := core.GetUser(name)
 		if errs.Print(err) {
 			continue
 		}
+		client := user.Client
 		if errs.Print(client.Login()) {
 			continue
 		}
+		userConfig := user.Config
 		courses := userConfig.GetCourses()
 		if errs.Print(client.GetCourses(courses)) {
 			continue

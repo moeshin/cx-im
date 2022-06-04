@@ -20,10 +20,10 @@ type WorkSign struct {
 
 func NewWorkSign(cfg *config.Config, logE *LogE) *WorkSign {
 	return &WorkSign{
-		SignTypeUnknown,
-		cfg, // CourseConfig
-		nil,
-		logE,
+		Type: SignTypeUnknown,
+		Cfg:  cfg,
+		Opts: nil,
+		Log:  logE,
 	}
 }
 
@@ -93,8 +93,8 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 	path := w.GetImagePath(tm)
 	var err error
-	if client == nil {
-		client, err = NewClientFromConfig(w.Cfg.Parent, w.Log)
+	if !client.Logged {
+		err = client.Login()
 	}
 	if path != "" && err == nil {
 		id, err := client.GetImageId(path, nil, 0)

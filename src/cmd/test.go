@@ -4,6 +4,7 @@ import (
 	"cx-im/src/config"
 	"cx-im/src/core"
 	"fmt"
+	"github.com/moeshin/go-errs"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -44,8 +45,10 @@ var testCmd = &cobra.Command{
 				}
 			}
 		}
-		userConfig := getUserConfig(cmd, args)
-		logE := &core.LogE{Logger: log.Default()}
+		user, err := getUser(cmd, args)
+		errs.Panic(err)
+		userConfig := user.Config
+		logE := user.Log
 		logN := logE.NewLogN(userConfig)
 		logN.State = core.NotifySign
 		logN.Println("这是一个测试")
@@ -66,7 +69,7 @@ var testCmd = &cobra.Command{
 		}
 		if signType == core.SignTypePhoto {
 			logN.Println("模拟时间：" + now.Format(config.TimeLayout))
-			imageId := work.GetImageId(now, nil)
+			imageId := work.GetImageId(now, user.Client)
 			logN.Println("预览（略缩图）：" + config.GetSignPhotoImageUrl(imageId, false))
 			logN.Println("预览（原图）：" + config.GetSignPhotoImageUrl(imageId, true))
 		}

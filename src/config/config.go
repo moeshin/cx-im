@@ -129,26 +129,6 @@ func (c *Config) String() string {
 	return string(data)
 }
 
-func (c *Config) GetDefaultUsername() string {
-	s := GodCI(c, DefaultUsername, "")
-	if s != "" {
-		_, err := os.Stat(GetUserConfigPath(s))
-		if err != nil {
-			return ""
-		}
-	}
-	return s
-}
-
-func (c *Config) HasDefaultUsername() bool {
-	return c.GetDefaultUsername() != ""
-}
-
-func (c *Config) SetDefaultUsername(username string) {
-	log.Println("设置默认用户：" + username)
-	c.Set(DefaultUsername, username)
-}
-
 func (c *Config) GetCourses() *Object {
 	c.RLock()
 	defer c.RUnlock()
@@ -226,15 +206,7 @@ var Default = NewObject()
 
 var AppConfig *Config
 
-const UserDir = "users"
-
-func GetUserDir(user string) string {
-	return filepath.Join(UserDir, user)
-}
-
-func GetUserConfigPath(user string) string {
-	return filepath.Join(GetUserDir(user), "config.json")
-}
+const DirUser = "users"
 
 func GetAppConfig() *Config {
 	if AppConfig == nil {
@@ -245,30 +217,6 @@ func GetAppConfig() *Config {
 		AppConfig = v
 	}
 	return AppConfig
-}
-
-func (c *Config) GetUserConfig(user string) *Config {
-	var v *Config
-	fn := func() {
-		v = Load(GetUserConfigPath(user), c)
-		if UsersConfig != nil {
-			v.User = &User{
-				Running: false,
-				Mutex:   &sync.RWMutex{},
-			}
-		}
-	}
-	if UsersConfig == nil {
-		fn()
-	} else {
-		var ok bool
-		v, ok = UsersConfig.Get(user)
-		if !ok {
-			fn()
-			UsersConfig.Set(user, v)
-		}
-	}
-	return v
 }
 
 const (
@@ -358,31 +306,4 @@ func GodRI[T Value](config *Config, key string, def T) T {
 
 func FloatToString(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
-}
-
-type UsersConfigS struct {
-	Map   map[string]*Config
-	Mutex *sync.RWMutex
-}
-
-var UsersConfig *UsersConfigS
-
-func InitUsersConfig() {
-	UsersConfig = &UsersConfigS{
-		Map:   map[string]*Config{},
-		Mutex: &sync.RWMutex{},
-	}
-}
-
-func (s *UsersConfigS) Get(user string) (*Config, bool) {
-	s.Mutex.RLock()
-	defer s.Mutex.RUnlock()
-	v, ok := s.Map[user]
-	return v, ok
-}
-
-func (s *UsersConfigS) Set(user string, cfg *Config) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	s.Map[user] = cfg
 }

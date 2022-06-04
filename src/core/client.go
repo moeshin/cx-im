@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
@@ -29,60 +28,61 @@ var (
 )
 
 type CxClient struct {
-	Username string
-	Password string
-	Fid      string
-	Uid      string
-	Logged   bool
-	Client   *http.Client
-	Log      *LogE
+	User   *User
+	Fid    string
+	Uid    string
+	Logged bool
+	Client *http.Client
 }
 
-func NewClient(username, password, fid string, logE *LogE) (*CxClient, error) {
+func NewClient(user *User) (*CxClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
 	}
-	if logE == nil {
-		logE = &LogE{
-			Logger: log.Default(),
-		}
-	}
 	return &CxClient{
-		username,
-		password,
-		fid,
-		"",
-		false,
-		&http.Client{
+		User:   user,
+		Logged: false,
+		Client: &http.Client{
 			Transport: HttpTransport,
 			Jar:       jar,
 		},
-		logE,
 	}, nil
 }
 
-func NewClientFromConfig(cfg *config.Config, logE *LogE) (*CxClient, error) {
-	username := config.GodCI(cfg, config.Username, "")
-	if username == "" {
-		return nil, errors.New("账号不存在")
-	}
-	password := config.GodCI(cfg, config.Password, "")
-	if password == "" {
-		return nil, errors.New("密码不存在")
-	}
-	fid := config.GodCI(cfg, config.Fid, "")
-	return NewClient(username, password, fid, logE)
+func (c *CxClient) GetConfigString(key string) string {
+	return config.GodCI(c.User.Config, key, "")
+}
+
+func (c *CxClient) GetUsername() string {
+	return c.GetConfigString(config.Username)
+}
+
+func (c *CxClient) GetPassword() string {
+	return c.GetConfigString(config.Password)
+}
+
+func (c *CxClient) GetFid() string {
+	return c.GetConfigString(config.Fid)
 }
 
 func (c *CxClient) Login() error {
-	log.Printf("正在登录账号：%s", c.Username)
+	username := c.GetUsername()
+	if username == "" {
+		return errors.New("用户名为空")
+	}
+	password := c.GetPassword()
+	if password == "" {
+		return errors.New("密码为空")
+	}
+	fid := c.GetFid()
+	c.User.Log.Printf("正在登录账号：%s", username)
 	var req *http.Request
 	var err error
-	if c.Fid == "" {
+	if fid == "" {
 		query := url.Values{
-			"uname": {c.Username},
-			"code":  {c.Password},
+			"uname": {username},
+			"code":  {password},
 		}
 		req, err = http.NewRequest(
 			"GET",
@@ -99,7 +99,7 @@ func (c *CxClient) Login() error {
 	if err != nil {
 		return err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return err
@@ -115,17 +115,17 @@ func (c *CxClient) Login() error {
 		}
 	}
 	c.Logged = true
-	log.Println("成功登录账号")
+	c.User.Log.Println("成功登录账号")
 	return nil
 }
 
 func (c *CxClient) GetCourses(courses *config.Object) error {
-	log.Println("获取课程数据汇总……")
+	c.User.Log.Println("获取课程数据汇总……")
 	resp, err := c.Client.Get("https://mooc2-ans.chaoxing.com/visit/courses/list?rss=1&catalogId=0&searchname=")
 	if err != nil {
 		return err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (c *CxClient) GetCourses(courses *config.Object) error {
 	for _, match := range matches {
 		courseId := match[1]
 		classId := match[2]
-		c.Log.ErrPrint(c.GetCourseDetail(courses, courseId, classId))
+		c.User.Log.ErrPrint(c.GetCourseDetail(courses, courseId, classId))
 	}
 	return nil
 }
@@ -153,7 +153,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	if err != nil {
 		return err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return err
@@ -165,7 +165,7 @@ func (c *CxClient) GetCourseDetail(courses *config.Object, courseId string, clas
 	chatId := AnyToString(data["chatid"])
 	courseName := AnyToString(AnyToJObject(AnyToJArray(AnyToJObject(data["course"])["data"]).Get(0))["name"])
 	className := AnyToString(data["name"])
-	c.Log.Printf("发现课程：《%s》『%s』(%s, %s) %s", courseName, className, courseId, classId, chatId)
+	c.User.Log.Printf("发现课程：《%s》『%s』(%s, %s) %s", courseName, className, courseId, classId, chatId)
 
 	course := config.GocObjI(courses, chatId)
 	course.Set(config.ChatId, chatId)
@@ -181,7 +181,7 @@ func (c *CxClient) GetImToken() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return "", "", err
@@ -205,7 +205,7 @@ func (c *CxClient) GetActiveDetail(activeId string) (JObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return nil, err
@@ -221,7 +221,7 @@ func (c *CxClient) PreSign(activeId string) error {
 	if err != nil {
 		return err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	return testResponseStatus(resp)
 }
 
@@ -240,7 +240,7 @@ func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string
 	if err != nil {
 		return "", err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
@@ -254,7 +254,7 @@ func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string
 
 func (c *CxClient) GetImageHostingToken() (string, error) {
 	resp, err := c.Client.Get("https://pan-yz.chaoxing.com/api/token/uservalid")
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
@@ -284,7 +284,7 @@ func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (st
 	if err != nil {
 		return "", nil, err
 	}
-	defer c.Log.ErrClose(writer)
+	defer c.User.Log.ErrClose(writer)
 	err = writer.WriteField("puid", c.Uid)
 	if err != nil {
 		return "", nil, err
@@ -302,7 +302,7 @@ func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (st
 		if err != nil {
 			return "", nil, err
 		}
-		defer c.Log.ErrClose(file)
+		defer c.User.Log.ErrClose(file)
 	}
 	_, err = io.Copy(fw, file)
 	if err != nil {
@@ -329,7 +329,7 @@ func (c *CxClient) UploadImage(filename string, file io.ReadCloser) (string, err
 	if err != nil {
 		return "", err
 	}
-	defer c.Log.CloseResponse(resp)
+	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
 	if err != nil {
 		return "", err
@@ -362,7 +362,7 @@ func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int6
 		if err != nil {
 			return "", err
 		}
-		defer c.Log.ErrClose(file)
+		defer c.User.Log.ErrClose(file)
 		size = i.Size()
 	}
 	h := sha256.New()
@@ -374,6 +374,12 @@ func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int6
 	v, ok := CacheImage.Map[key]
 	if ok {
 		return v, nil
+	}
+	if !c.Logged {
+		err := c.Login()
+		if err != nil {
+			return "", err
+		}
 	}
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
@@ -425,7 +431,7 @@ func parseCxClientJson(resp *http.Response) (JObject, error) {
 	return nil, errors.New(msg)
 }
 
-var HttpTransport = (func() *http.Transport {
+var HttpTransport = func() *http.Transport {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	// 抓包调试
 	//proxy, err := url.Parse("http://127.0.0.1:8888")
@@ -433,7 +439,7 @@ var HttpTransport = (func() *http.Transport {
 	//	transport.Proxy = http.ProxyURL(proxy)
 	//}
 	return transport
-})()
+}()
 
 var HttpClient = &http.Client{
 	Transport: HttpTransport,

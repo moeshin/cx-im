@@ -36,20 +36,21 @@ func init() {
 }
 
 func initUser(username string, password string, fid string, def bool) error {
-	appConfig := config.GetAppConfig()
-	userConfig := appConfig.GetUserConfig(username)
-	client, err := core.NewClient(username, password, fid, nil)
-	if err != nil {
-		return err
-	}
-	err = client.Login()
+	user, err := core.GetUser(username)
 	if err != nil {
 		return err
 	}
 
+	userConfig := user.Config
 	userConfig.Set(config.Username, username)
 	userConfig.Set(config.Password, password)
 	userConfig.Set(config.Fid, fid)
+
+	client := user.Client
+	err = client.Login()
+	if err != nil {
+		return err
+	}
 
 	courses := userConfig.GetCourses()
 	err = client.GetCourses(courses)
@@ -61,9 +62,10 @@ func initUser(username string, password string, fid string, def bool) error {
 		return err
 	}
 
+	appConfig := config.GetAppConfig()
 	save := appConfig.New
-	if def || !appConfig.HasDefaultUsername() {
-		appConfig.SetDefaultUsername(username)
+	if def || !core.HasDefaultUsername() {
+		core.SetDefaultUsername(username)
 		save = true
 	}
 	if save {
