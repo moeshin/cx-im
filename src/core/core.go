@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 )
 
 type JObject map[string]any
@@ -54,4 +55,9 @@ func GodJObjectI[T JValue](obj JObject, key string, def T) T {
 
 func SliceRemove[T any](slice []T, i int) []T {
 	return append(slice[:i], slice[i+1:]...)
+}
+
+func CanFileStat(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
 }

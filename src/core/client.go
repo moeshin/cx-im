@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/orirawlings/persistent-cookiejar"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,22 +27,35 @@ var (
 	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
 )
 
+var ClientNoCache bool
+
 type CxClient struct {
 	User   *User
 	Fid    string
 	Uid    string
 	Logged bool
+	Jar    *cookiejar.Jar
 	Client *http.Client
 }
 
 func NewClient(user *User) (*CxClient, error) {
-	jar, err := cookiejar.New(nil)
+	var logged bool
+	filename := user.Dir.GetCookiesPath()
+	jar, err := cookiejar.New(&cookiejar.Options{
+		Filename:  filename,
+		NoPersist: ClientNoCache,
+	})
 	if err != nil {
 		return nil, err
 	}
+	if !ClientNoCache && CanFileStat(filename) {
+		user.Log.Println("加载 Cookie 缓存：" + filename)
+		logged = true
+	}
 	return &CxClient{
 		User:   user,
-		Logged: false,
+		Logged: logged,
+		Jar:    jar,
 		Client: &http.Client{
 			Transport: HttpTransport,
 			Jar:       jar,
@@ -95,6 +108,7 @@ func (c *CxClient) Login() error {
 	if err != nil {
 		return err
 	}
+	c.Jar.RemoveAll()
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return err
@@ -116,7 +130,16 @@ func (c *CxClient) Login() error {
 	}
 	c.Logged = true
 	c.User.Log.Println("成功登录账号")
+	c.User.Log.Println("保存 Cookie 缓存")
+	c.User.Log.ErrPrint(c.Jar.Save())
 	return nil
+}
+
+func (c *CxClient) Auth() error {
+	if c.Logged {
+		return nil
+	}
+	return c.Login()
 }
 
 func (c *CxClient) GetCourses(courses *config.Object) error {
@@ -376,7 +399,7 @@ func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int6
 		return v, nil
 	}
 	if !c.Logged {
-		err := c.Login()
+		err := c.Auth()
 		if err != nil {
 			return "", err
 		}

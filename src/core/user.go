@@ -66,12 +66,12 @@ func (u *UserDir) GetLogPath() string {
 	return u.Join("log.txt")
 }
 
-func (u *UserDir) GetCookiePath() string {
-	return u.Join("image-token.txt")
+func (u *UserDir) GetCookiesPath() string {
+	return u.Join("cookies.json")
 }
 
 func (u *UserDir) GetImageTokenPath() string {
-	return u.Join("cookie.txt")
+	return u.Join("image-token.txt")
 }
 
 type User struct {

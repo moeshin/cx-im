@@ -45,7 +45,7 @@ func StartWork(user *User) {
 }
 
 func (w *Work) Connect() error {
-	err := w.User.Client.Login()
+	err := w.User.Client.Auth()
 	if err != nil {
 		return err
 	}
