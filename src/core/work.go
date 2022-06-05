@@ -45,10 +45,6 @@ func StartWork(user *User) {
 }
 
 func (w *Work) Connect() error {
-	err := w.User.Client.Auth()
-	if err != nil {
-		return err
-	}
 	url := im.GetUrl()
 	w.User.Log.Println("IM 连接：" + url)
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)

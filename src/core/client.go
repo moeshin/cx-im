@@ -39,7 +39,6 @@ type CxClient struct {
 }
 
 func NewClient(user *User) (*CxClient, error) {
-	var logged bool
 	filename := user.Dir.GetCookiesPath()
 	jar, err := cookiejar.New(&cookiejar.Options{
 		Filename:  filename,
@@ -48,19 +47,24 @@ func NewClient(user *User) (*CxClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !ClientNoCache && CanFileStat(filename) {
-		user.Log.Println("加载 Cookie 缓存：" + filename)
-		logged = true
-	}
-	return &CxClient{
-		User:   user,
-		Logged: logged,
-		Jar:    jar,
+	client := &CxClient{
+		User: user,
+		Jar:  jar,
 		Client: &http.Client{
 			Transport: HttpTransport,
 			Jar:       jar,
 		},
-	}, nil
+	}
+	if !ClientNoCache && CanFileStat(filename) {
+		user.Log.Println("加载 Cookie 缓存：" + filename)
+		client.Logged = true
+	} else {
+		err = client.Login()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
 }
 
 func (c *CxClient) GetConfigString(key string) string {
@@ -132,7 +136,7 @@ func (c *CxClient) Login() error {
 	c.User.Log.Println("成功登录账号")
 	c.User.Log.Println("保存 Cookie 缓存")
 	c.User.Log.ErrPrint(c.Jar.Save())
-	return c.User.SaveImageToken()
+	return c.User.SaveImageToken(c)
 }
 
 func (c *CxClient) Auth() error {

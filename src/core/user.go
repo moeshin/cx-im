@@ -149,7 +149,7 @@ func (u *User) LoadImageToken() error {
 	filename := u.Dir.GetImageTokenPath()
 	file, err := os.Open(filename)
 	if err != nil {
-		return u.SaveImageToken()
+		return u.SaveImageToken(nil)
 	}
 	u.Log.Println("加载图床凭证缓存：" + filename)
 	defer u.Log.ErrClose(file)
@@ -159,14 +159,17 @@ func (u *User) LoadImageToken() error {
 	}
 	token := strings.TrimSpace(string(data))
 	if token == "" {
-		return u.SaveImageToken()
+		return u.SaveImageToken(nil)
 	}
 	u.ImageToken = token
 	return nil
 }
 
-func (u *User) SaveImageToken() error {
-	token, err := u.Client.GetImageToken()
+func (u *User) SaveImageToken(client *CxClient) error {
+	if client == nil {
+		client = u.Client
+	}
+	token, err := client.GetImageToken()
 	if err != nil {
 		return err
 	}
