@@ -132,7 +132,7 @@ func (c *CxClient) Login() error {
 	c.User.Log.Println("成功登录账号")
 	c.User.Log.Println("保存 Cookie 缓存")
 	c.User.Log.ErrPrint(c.Jar.Save())
-	return nil
+	return c.User.SaveImageToken()
 }
 
 func (c *CxClient) Auth() error {
@@ -275,7 +275,7 @@ func (c *CxClient) Sign(activeId string, signOptions *model.SignOptions) (string
 	return string(data), nil
 }
 
-func (c *CxClient) GetImageHostingToken() (string, error) {
+func (c *CxClient) GetImageToken() (string, error) {
 	resp, err := c.Client.Get("https://pan-yz.chaoxing.com/api/token/uservalid")
 	defer c.User.Log.CloseResponse(resp)
 	err = testResponseStatus(resp)
@@ -298,21 +298,14 @@ func (c *CxClient) GetImageHostingToken() (string, error) {
 }
 
 func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (string, io.Reader, error) {
-	token, err := c.GetImageHostingToken()
-	if err != nil {
-		return "", nil, err
-	}
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	if err != nil {
-		return "", nil, err
-	}
 	defer c.User.Log.ErrClose(writer)
-	err = writer.WriteField("puid", c.Uid)
+	err := writer.WriteField("puid", c.Uid)
 	if err != nil {
 		return "", nil, err
 	}
-	err = writer.WriteField("_token", token)
+	err = writer.WriteField("_token", c.User.ImageToken)
 	if err != nil {
 		return "", nil, err
 	}
@@ -397,12 +390,6 @@ func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int6
 	v, ok := CacheImage.Map[key]
 	if ok {
 		return v, nil
-	}
-	if !c.Logged {
-		err := c.Auth()
-		if err != nil {
-			return "", err
-		}
 	}
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {

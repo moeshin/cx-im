@@ -92,17 +92,11 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 
 func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 	path := w.GetImagePath(tm)
-	var err error
-	if !client.Logged {
-		err = client.Auth()
-	}
-	if path != "" && err == nil {
+	if path != "" {
 		id, err := client.GetImageId(path, nil, 0)
 		if err == nil {
 			return id
 		}
-	}
-	if err != nil {
 		w.Log.Println("上传图片失败", err)
 	}
 	w.Log.Println("将使用一张黑图进行图片签到")

@@ -3,9 +3,11 @@ package core
 import (
 	"cx-im/src/config"
 	"github.com/moeshin/go-errs"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -75,14 +77,15 @@ func (u *UserDir) GetImageTokenPath() string {
 }
 
 type User struct {
-	Username string
-	Password string
-	Fid      string
-	Dir      *UserDir
-	Config   *config.Config
-	Client   *CxClient
-	Log      *LogE
-	LogFile  *os.File
+	Username   string
+	Password   string
+	Fid        string
+	Dir        *UserDir
+	Config     *config.Config
+	Client     *CxClient
+	ImageToken string
+	Log        *LogE
+	LogFile    *os.File
 }
 
 func NewUser(username string) (*User, error) {
@@ -121,11 +124,16 @@ func NewUser(username string) (*User, error) {
 		Log:      &LogE{logger},
 		LogFile:  file,
 	}
-	client, err := NewClient(user)
+	user.Client, err = NewClient(user)
 	if err != nil {
 		return nil, err
 	}
-	user.Client = client
+	if !ClientNoCache {
+		err = user.LoadImageToken()
+		if err != nil {
+			return nil, err
+		}
+	}
 	_ok = true
 	return user, nil
 }
@@ -135,6 +143,39 @@ func (u *User) Close() error {
 		return nil
 	}
 	return u.LogFile.Close()
+}
+
+func (u *User) LoadImageToken() error {
+	filename := u.Dir.GetImageTokenPath()
+	file, err := os.Open(filename)
+	if err != nil {
+		return u.SaveImageToken()
+	}
+	u.Log.Println("加载图床凭证缓存：" + filename)
+	defer u.Log.ErrClose(file)
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		return u.SaveImageToken()
+	}
+	u.ImageToken = token
+	return nil
+}
+
+func (u *User) SaveImageToken() error {
+	token, err := u.Client.GetImageToken()
+	if err != nil {
+		return err
+	}
+	u.ImageToken = token
+	filename := u.Dir.GetImageTokenPath()
+	log.Println("保存图床凭证缓存：" + filename)
+	err = os.WriteFile(filename, []byte(token), 0666)
+	u.Log.ErrPrint(err)
+	return nil
 }
 
 type users struct {
