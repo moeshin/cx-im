@@ -371,18 +371,18 @@ func (c *CxClient) UploadImage(filename string, file io.ReadCloser) (string, err
 	return v.ObjectId, nil
 }
 
-func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int64) (string, error) {
+func (c *CxClient) GetImage(filename string, file io.ReadSeekCloser, size int64) (*Image, error) {
 	CacheImage.Mutex.Lock()
 	defer CacheImage.Mutex.Unlock()
 	hasFile := file != nil
 	if !hasFile {
 		i, err := os.Stat(filename)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		file, err = os.Open(filename)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		defer c.User.Log.ErrClose(file)
 		size = i.Size()
@@ -390,27 +390,27 @@ func (c *CxClient) GetImageId(filename string, file io.ReadSeekCloser, size int6
 	h := sha256.New()
 	_, err := io.Copy(h, file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	key := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(size, 10)
-	v, ok := CacheImage.Map[key]
+	k := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(size, 10)
+	v, ok := CacheImage.Map[k]
 	if ok {
-		return v, nil
+		return nil, err
 	}
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	v, err = c.UploadImage(filename, file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	CacheImage.Map[key] = v
+	CacheImage.Map[k] = v
 	CacheImage.Save = true
 	if hasFile {
 		saveCacheImage()
 	}
-	return v, nil
+	return &Image{k, v}, nil
 }
 
 func testResponseStatus(resp *http.Response) error {

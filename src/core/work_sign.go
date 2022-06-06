@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const ImageIdNone = "041ed4756ca9fdf1f9b6dde7a83f8794"
+const ImageIdNone = "`041ed4756ca9fdf1f9b6dde7a83f8794`"
 
 type WorkSign struct {
 	Type SignType
@@ -93,9 +93,9 @@ func (w *WorkSign) GetImagePath(tm time.Time) string {
 func (w *WorkSign) GetImageId(tm time.Time, client *CxClient) string {
 	path := w.GetImagePath(tm)
 	if path != "" {
-		id, err := client.GetImageId(path, nil, 0)
+		image, err := client.GetImage(path, nil, 0)
 		if err == nil {
-			return id
+			return image.Id
 		}
 		w.Log.Println("上传图片失败", err)
 	}

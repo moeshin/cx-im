@@ -61,3 +61,8 @@ func CanFileStat(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
 }
+
+type Image struct {
+	Key string `json:"key"` // sha256:size
+	Id  string `json:"id"`
+}

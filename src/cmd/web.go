@@ -196,17 +196,14 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		case "images":
 			if r.Method == http.MethodGet {
-				var ids []string
 				core.CacheImage.Mutex.Lock()
-				for _, id := range core.CacheImage.Map {
-					ids = append(ids, id)
-				}
-				core.CacheImage.Mutex.Unlock()
-				api.O(ids)
+				defer core.CacheImage.Mutex.Unlock()
+				api.O(core.CacheImage.Map)
 				return
 			}
 		case "image":
-			if r.Method == http.MethodPost {
+			switch r.Method {
+			case http.MethodPost:
 				username := r.URL.Query().Get("username")
 				if username == "" {
 					username = core.GetDefaultUsername()
@@ -224,11 +221,21 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if api.Err(err) {
 					return
 				}
-				id, err := user.Client.GetImageId(header.Filename, file, header.Size)
+				image, err := user.Client.GetImage(header.Filename, file, header.Size)
 				if api.Err(err) {
 					return
 				}
-				api.O(id)
+				api.O(image)
+				return
+			case http.MethodDelete:
+				k := r.URL.Query().Get("key")
+				core.CacheImage.Mutex.Lock()
+				defer core.CacheImage.Mutex.Unlock()
+				v, ok := core.CacheImage.Map[k]
+				if ok {
+					delete(core.CacheImage.Map, k)
+				}
+				api.O(v)
 				return
 			}
 		default:
