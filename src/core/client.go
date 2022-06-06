@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/moeshin/go-errs"
 	"github.com/orirawlings/persistent-cookiejar"
 	"io"
 	"io/ioutil"
@@ -28,11 +29,15 @@ var (
 )
 
 var ClientNormalLogin bool
+var CxBaseUrl = func() *url.URL {
+	uri, err := url.Parse("https://chaoxing.com")
+	errs.Panic(err)
+	return uri
+}()
 
 type CxClient struct {
 	User   *User
 	Fid    string
-	Uid    string
 	Logged bool
 	Jar    *cookiejar.Jar
 	Client *http.Client
@@ -124,16 +129,7 @@ func (c *CxClient) Login() error {
 	if err != nil {
 		return err
 	}
-	for _, cookie := range resp.Cookies() {
-		if cookie.Domain == ".chaoxing.com" {
-			switch cookie.Name {
-			case "fid":
-				c.Fid = cookie.Value
-			case "_uid":
-				c.Uid = cookie.Value
-			}
-		}
-	}
+	c.Fid = c.GetBaseCookieValueI("fid")
 	c.Logged = true
 	c.User.Log.Println("成功登录账号")
 	c.User.Log.Println("保存 Cookie 缓存")
@@ -307,7 +303,7 @@ func (c *CxClient) buildUploadImageBody(filename string, file io.ReadCloser) (st
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	defer c.User.Log.ErrClose(writer)
-	err := writer.WriteField("puid", c.Uid)
+	err := writer.WriteField("puid", c.GetBaseCookieValueI("_uid"))
 	if err != nil {
 		return "", nil, err
 	}
@@ -339,7 +335,7 @@ func (c *CxClient) UploadImage(filename string, file io.ReadCloser) (string, err
 		return "", errors.New("图片扩展名错误：" + filename)
 	}
 	ext = ext[1:]
-	_, ok := config.ImageExt[ext[1:]]
+	_, ok := config.ImageExt[ext]
 	if !ok {
 		return "", errors.New("不支持该图片扩展名：" + ext)
 	}
@@ -392,7 +388,7 @@ func (c *CxClient) GetImage(filename string, file io.ReadSeekCloser, size int64)
 	if err != nil {
 		return nil, err
 	}
-	k := hex.EncodeToString(h.Sum(nil)) + strconv.FormatInt(size, 10)
+	k := hex.EncodeToString(h.Sum(nil)) + "|" + strconv.FormatInt(size, 10)
 	v, ok := CacheImage.Map[k]
 	if ok {
 		return nil, err
@@ -411,6 +407,28 @@ func (c *CxClient) GetImage(filename string, file io.ReadSeekCloser, size int64)
 		saveCacheImage()
 	}
 	return &Image{k, v}, nil
+}
+
+func (c *CxClient) GetBaseCookie(name string) *http.Cookie {
+	for _, cookie := range c.Jar.Cookies(CxBaseUrl) {
+		if cookie.Name == name {
+			return cookie
+		}
+	}
+	return nil
+}
+
+func (c *CxClient) GetBaseCookieValue(name string) (string, bool) {
+	cookie := c.GetBaseCookie(name)
+	if cookie == nil {
+		return "", false
+	}
+	return cookie.Value, true
+}
+
+func (c *CxClient) GetBaseCookieValueI(name string) string {
+	v, _ := c.GetBaseCookieValue(name)
+	return v
 }
 
 func testResponseStatus(resp *http.Response) error {

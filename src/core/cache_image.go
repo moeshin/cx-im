@@ -35,13 +35,14 @@ func loadCacheImage() {
 }
 
 func saveCacheImage() {
-	CacheImage.Mutex.Lock()
-	defer CacheImage.Mutex.Unlock()
+	if CacheImage.Mutex.TryLock() {
+		defer CacheImage.Mutex.Unlock()
+	}
 	if !CacheImage.Save {
 		return
 	}
 	log.Println("保存图片缓存：" + CacheImagePath)
-	data, err := json.MarshalIndent(CacheImage.Map, "", "  ")
+	data, err := JsonMarshal(CacheImage.Map)
 	if errs.Print(err) {
 		return
 	}

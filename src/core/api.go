@@ -34,7 +34,7 @@ func (a *Api) Response(w http.ResponseWriter) {
 		w.WriteHeader(a.code)
 		return
 	}
-	data, err := json.MarshalIndent(a, "", "  ")
+	data, err := JsonMarshal(a)
 	if errs.Print(err) {
 		return
 	}
