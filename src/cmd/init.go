@@ -12,7 +12,7 @@ var initCmd = &cobra.Command{
 	Use:   "init <账号> <密码> [fid 学校编码]",
 	Short: "账号初始化",
 	Run: func(cmd *cobra.Command, args []string) {
-		core.ClientNoCache = true
+		core.ClientNormalLogin = true
 		argc := len(args)
 		if argc < 2 {
 			cmd.Println("参数错误：至少需要『账号』和『密码』")

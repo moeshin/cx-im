@@ -27,7 +27,7 @@ var (
 	regexpImToken = regexp.MustCompile(`loginByToken\('(\d+?)', '([^']+?)'\);`)
 )
 
-var ClientNoCache bool
+var ClientNormalLogin bool
 
 type CxClient struct {
 	User   *User
@@ -42,7 +42,7 @@ func NewClient(user *User) (*CxClient, error) {
 	filename := user.Dir.GetCookiesPath()
 	jar, err := cookiejar.New(&cookiejar.Options{
 		Filename:  filename,
-		NoPersist: ClientNoCache,
+		NoPersist: ClientNormalLogin,
 	})
 	if err != nil {
 		return nil, err
@@ -55,13 +55,15 @@ func NewClient(user *User) (*CxClient, error) {
 			Jar:       jar,
 		},
 	}
-	if !ClientNoCache && CanFileStat(filename) {
-		user.Log.Println("加载 Cookie 缓存：" + filename)
-		client.Logged = true
-	} else {
-		err = client.Login()
-		if err != nil {
-			return nil, err
+	if !ClientNormalLogin {
+		if CanFileStat(filename) {
+			user.Log.Println("加载 Cookie 缓存：" + filename)
+			client.Logged = true
+		} else {
+			err = client.Login()
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return client, nil

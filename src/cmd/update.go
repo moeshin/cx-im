@@ -13,7 +13,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update [账号]",
 	Short: "更新课程",
 	Run: func(cmd *cobra.Command, args []string) {
-		core.ClientNoCache = true
+		core.ClientNormalLogin = true
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
 			updateAll()
