@@ -1,0 +1,35 @@
+{{ define "header" -}}
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no"/>
+    <meta name="renderer" content="webkit"/>
+    <meta name="force-rendering" content="webkit"/>
+    <title>cx-im</title>
+    <link rel="stylesheet" href="https://unpkg.com/mdui@1.0.2/dist/css/mdui.min.css"/>
+    <link rel="stylesheet" href="assets/style.css"/>
+    <script src="https://unpkg.com/mdui@1.0.2/dist/js/mdui.min.js"></script>
+    <script src="assets/pjax.js"></script>
+    <script src="assets/script.js"></script>
+</head>
+<body class="mdui-drawer-body-left mdui-appbar-with-toolbar mdui-theme-primary-indigo mdui-theme-accent-pink
+mdui-theme-layout-auto">
+<header class="mdui-appbar mdui-appbar-fixed">
+    <div class="mdui-toolbar mdui-color-theme">
+        <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white"
+              mdui-drawer="{target: '#main-drawer', swipe: true}">
+            <i class="mdui-icon material-icons">menu</i>
+        </span>
+        <span class="mdui-typo-headline mdui-hidden-xs">cx-im</span>
+        <span class="mdui-typo-title" id="main-title">首页</span>
+        <span class="mdui-toolbar-spacer"></span>
+    </div>
+</header>
+<div class="mdui-container" id="main-container">
+{{- end }}
+{{ define "footer" -}}
+</div>
+</body>
+</html>
+{{- end }}
