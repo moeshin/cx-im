@@ -16,8 +16,8 @@ startTime = {{ getStartTime }};
         t = Math.floor(t / 60);
         const h = Math.floor(t % 24);
         const d = Math.floor(t / 24);
-        $('#running-time').html(`${d} 天 ${h} 时 ${m} 分 ${s} 秒`);
+        $('#running-time').text(`${d} 天 ${h} 时 ${m} 分 ${s} 秒`);
     }, 1000);
-})()
+})();
 </script>
 {{ template "footer" . }}
