@@ -2,22 +2,55 @@
 {{ template "header" . }}
 <ul class="mdui-list"></ul>
 <script>
-CxIm.apiRequest('api/users').then(users => {
-    const $list = $('#main-container .mdui-list');
-    for (const user in users) {
-        const running = users[user];
-        $list.append(`
-<li class="mdui-list-item mdui-ripple">
-    <div class="mdui-list-item-content">
-        <div class="mdui-list-item-title">${user}</div>
-        <div class="mdui-list-item-text">${running ? '运行中' : '未运行'}</div>
-    </div>
-    <label class="mdui-switch">
-        <input type="checkbox"${running ? ' checked' : ''}/>
-        <i class="mdui-switch-icon"></i>
-    </label>
-</li>`);
+(() => {
+    function getItem($e) {
+        let $p = $e;
+        while (!($p = $p.parent()).hasClass('mdui-list-item')) {
+            if (!$p.length) {
+                throw $p;
+            }
+        }
+        return $p;
     }
-});
+    function getUsername($item) {
+        return $item.find('.mdui-list-item-title').text();
+    }
+    function getState(running) {
+        return running ? '运行中' : '未运行';
+    }
+    const $list = $('#main-container .mdui-list').on('change', '[data-run]', function () {
+        const $item = getItem($(this));
+        const checked = this.checked;
+        CxIm.apiRequest({
+            method: 'POST',
+            url: '/api/user/' + (checked ? 'start' : 'stop'),
+            params: {
+                username: getUsername($item),
+            }
+        }).then(ok => {
+            if (ok) {
+                $item.find('.mdui-list-item-text').text(getState(checked));
+            } else {
+                this.checked = !checked;
+            }
+        });
+    });
+    CxIm.apiRequest('/api/users').then(users => {
+        for (const user in users) {
+            const running = users[user];
+            $list.append(`
+<li class="mdui-list-item mdui-ripple">
+<div class="mdui-list-item-content">
+    <div class="mdui-list-item-title">${user}</div>
+    <div class="mdui-list-item-text">${getState(running)}</div>
+</div>
+<label class="mdui-switch">
+    <input type="checkbox"${running ? ' checked' : ''} data-run/>
+    <i class="mdui-switch-icon"></i>
+</label>
+</li>`);
+        }
+    });
+})();
 </script>
 {{ template "footer" . }}
