@@ -8,7 +8,7 @@ startTime = {{ getStartTime }};
     if (window.runingTimer) {
         clearInterval(runingTimer);
     }
-    window.runingTimer = setInterval(() => {
+    function handler() {
         let t = Math.floor((Date.now() - startTime) / 1000);
         const s = t % 60;
         t = Math.floor(t / 60);
@@ -17,7 +17,9 @@ startTime = {{ getStartTime }};
         const h = Math.floor(t % 24);
         const d = Math.floor(t / 24);
         $('#running-time').text(`${d} 天 ${h} 时 ${m} 分 ${s} 秒`);
-    }, 1000);
+    }
+    handler();
+    window.runingTimer = setInterval(handler, 1000);
 })();
 </script>
 {{ template "footer" . }}
