@@ -1,3 +1,23 @@
+{{ define "title" }}首页{{ end }}
 {{ template "header" . }}
-<h1>首页</h1>
+<h1 class="mdui-text-center mdui-typo-display-2">已运行</h1>
+<h2 class="mdui-text-center mdui-typo-display-1" id="running-time"></h2>
+<script>
+startTime = {{ getStartTime }};
+(() => {
+    if (window.runingTimer) {
+        clearInterval(runingTimer);
+    }
+    window.runingTimer = setInterval(() => {
+        let t = Math.floor((Date.now() - startTime) / 1000);
+        const s = t % 60;
+        t = Math.floor(t / 60);
+        const m = t % 60;
+        t = Math.floor(t / 60);
+        const h = Math.floor(t % 24);
+        const d = Math.floor(t / 24);
+        $('#running-time').html(`${d} 天 ${h} 时 ${m} 分 ${s} 秒`);
+    }, 1000);
+})()
+</script>
 {{ template "footer" . }}

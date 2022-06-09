@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var webCmd = &cobra.Command{
@@ -43,6 +44,7 @@ const WebDir = "web"
 
 var WebTemplatesPath = filepath.Join(WebDir, "templates.gohtml")
 var webFileServer = http.FileServer(http.Dir(WebDir))
+var webStartTime = time.Now().UnixMilli()
 
 func webRun() {
 	core.InitUsers()
@@ -282,12 +284,16 @@ func handleWebRoot(w http.ResponseWriter, r *http.Request) {
 	case ".html":
 		var err error
 		filename := filepath.Join(WebDir, urlPath)
-		tmpl, err := template.ParseFiles(WebTemplatesPath, filename)
-		name := filepath.Base(filename)
+		tmpl, err := template.New("Common").Funcs(template.FuncMap{
+			"getStartTime": func() int64 {
+				return webStartTime
+			},
+		}).ParseFiles(WebTemplatesPath, filename)
 		if errs.Print(err) {
 			return
 		}
 		pjax, _ := strconv.ParseBool(r.Header.Get("X-PJAX"))
+		name := filepath.Base(filename)
 		err = tmpl.ExecuteTemplate(w, name, &struct {
 			Name string
 			Pjax bool
