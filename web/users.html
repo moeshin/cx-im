@@ -1,9 +1,9 @@
 {{ define "title" }}用户管理{{ end }}
 {{ template "header" . }}
-<ul class="mdui-list"></ul>
+<div class="mdui-list"></div>
 <script>
 (() => {
-    function getItem($e) {
+    function get$item($e) {
         let $p = $e;
         while (!($p = $p.parent()).hasClass('mdui-list-item')) {
             if (!$p.length) {
@@ -18,8 +18,38 @@
     function getState(running) {
         return running ? '运行中' : '未运行';
     }
-    const $list = $('#main-container .mdui-list').on('change', '[data-run]', function () {
-        const $item = getItem($(this));
+    function get$count() {
+        const $title = $('#main-title');
+        let $count = $title.children('#count');
+        if (!$count.length) {
+            $count = $('<span id="count">0</span>');
+            $title.append(' (', $count, ')');
+        }
+        return $count.add($usersCount);
+    }
+    function get$selectParent($e) {
+        return $e.find('.list-select')
+    }
+    function viewListSelect(hide) {
+        const $p = get$selectParent($list);
+        let $1 = mainToolbar.add($p.siblings('.list-ctrl'));
+        let $2 = selectToolbar.add($p);
+        if (hide) {
+            [$1, $2] = [$2, $1];
+            $p.children('input').prop('checked', false);
+            $usersSelectCount.text(selectCount = 0);
+        }
+        $1.addClass('mdui-hidden');
+        $2.removeClass('mdui-hidden');
+    }
+    const mainToolbar = $('#main-toolbar');
+    const selectToolbar = $('#users-select-toolbar').on('click', '.mdui-btn:first', () => {
+        viewListSelect(true);
+    });
+    const $usersCount = $('#users-count');
+    const $usersSelectCount = $('#users-select-count');
+    const $list = $('#main-container .mdui-list').on('change', '.list-ctrl>input', function () {
+        const $item = get$item($(this));
         const checked = this.checked;
         CxIm.apiRequest({
             method: 'POST',
@@ -34,22 +64,45 @@
                 this.checked = !checked;
             }
         });
+    }).on('change', '.list-select>input', function () {
+        $usersSelectCount.text(selectCount += this.checked ? 1 : -1);
+        const checked = selectCount === usersCount;
+        $selectAll.prop('checked', checked);
+        $selectAll.prop('indeterminate', !checked && selectCount !== 0);
+    });
+    const $selectAll = $('#users-select-all').on('change', function () {
+        const checked = this.checked;
+        $usersSelectCount.text(selectCount = checked ? usersCount : 0);
+        get$selectParent($list).children('input').prop('checked', checked);
+    });
+    let usersCount = 0;
+    let selectCount = 0;
+    onListClick($list, null, $item => {
+        get$selectParent($item).prop('checked', true);
+        viewListSelect();
     });
     CxIm.apiRequest('/api/users').then(users => {
+        let c = 0;
         for (const user in users) {
+            ++c;
             const running = users[user];
             $list.append(`
-<li class="mdui-list-item mdui-ripple">
+<label class="mdui-list-item mdui-ripple">
 <div class="mdui-list-item-content">
     <div class="mdui-list-item-title">${user}</div>
     <div class="mdui-list-item-text">${getState(running)}</div>
 </div>
-<label class="mdui-switch">
-    <input type="checkbox"${running ? ' checked' : ''} data-run/>
+<div class="mdui-checkbox mdui-hidden list-select"">
+    <input type="checkbox"/>
+    <i class="mdui-checkbox-icon"></i>
+</div>
+<div class="mdui-switch list-ctrl">
+    <input type="checkbox"${running ? ' checked' : ''}/>
     <i class="mdui-switch-icon"></i>
-</label>
-</li>`);
+</div>
+</label>`);
         }
+        get$count().text(usersCount = c);
     });
 })();
 </script>
