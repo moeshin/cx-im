@@ -1,4 +1,3 @@
-$ = mdui.$;
 class CxIm {
     static apiRequest(opts) {
         if (typeof opts !== 'object') {
