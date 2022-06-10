@@ -78,14 +78,24 @@ class CxIm {
         if (typeof opts !== 'object') {
             opts = {url: opts};
         } else {
-            const obj = opts.params;
-            if (typeof obj === 'object') {
-                let url = new URL(opts.url, location.href);
-                const params = url.searchParams;
-                for (const k in obj) {
-                    params.set(k, obj[k]);
+            const param = opts.param;
+            if (param) {
+                const query = $.param(param);
+                if (query) {
+                    let url = opts.url;
+                    const end = url.length - 1;
+                    const i = url.lastIndexOf('?');
+                    if (i === -1) {
+                        url += '?';
+                    } else if (i !== end) {
+                        const i = url.lastIndexOf('&');
+                        if (i === -1 || i !== end) {
+                            url += '&';
+                        }
+                    }
+                    url += query;
+                    opts.url = url;
                 }
-                opts.url = url.toString();
             }
         }
 
