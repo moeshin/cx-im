@@ -62,11 +62,13 @@
     }
     function viewListSelect(hide) {
         const $p = get$selectParent($list);
+        const $input = $p.children('input');
         let $1 = mainAppbar.add($p.siblings('.list-ctrl'));
         let $2 = selectAppbar.add($p);
+        $input.attr('type', hide ? 'hidden' : 'checkbox');
         if (hide) {
             [$1, $2] = [$2, $1];
-            $p.children('input').prop('checked', false);
+            $input.prop('checked', false);
             $usersSelectCount.text(selectCount = 0);
         }
         $1.addClass('mdui-hidden');
@@ -171,8 +173,8 @@
     <div class="mdui-list-item-title">${user}</div>
     <div class="mdui-list-item-text">${getStateString(running)}</div>
 </div>
-<div class="mdui-checkbox mdui-hidden list-select"">
-    <input type="checkbox"/>
+<div class="mdui-checkbox mdui-hidden list-select">
+    <input type="hidden"/>
     <i class="mdui-checkbox-icon"></i>
 </div>
 <div class="mdui-switch list-ctrl">
