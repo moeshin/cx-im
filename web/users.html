@@ -8,20 +8,36 @@
         <span class="mdui-typo-headline mdui-hidden-xs">cx-im</span>
         <span class="mdui-typo-title"><span id="users-select-count">0</span> / <span id="users-count">0</span></span>
         <span class="mdui-toolbar-spacer"></span>
-        <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white">
-            <i class="mdui-icon material-icons">delete_forever</i>
+        <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-menu="{target: '#users-more'}">
+            <i class="mdui-icon material-icons">more_vert</i>
         </span>
-        <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white">
-            <i class="mdui-icon material-icons">play_arrow</i>
-        </span>
-        <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white">
-            <i class="mdui-icon material-icons">pause</i>
-        </span>
-        <label class="mdui-checkbox" style="overflow: unset">
-            <input type="checkbox" id="users-select-all"/>
-            <i class="mdui-checkbox-icon"></i>
-            全选
-        </label>
+        <ul class="mdui-menu" id="users-more">
+            <li>
+                <label class="mdui-menu-item" style="overflow: unset">
+                    <a class="mdui-ripple">
+                        <div class="mdui-checkbox">
+                            <input type="checkbox" id="users-select-all"/>
+                            <i class="mdui-menu-item-icon mdui-checkbox-icon"></i>全选
+                        </div>
+                    </a>
+                </label>
+            </li>
+            <li class="mdui-menu-item">
+                <a class="mdui-ripple">
+                    <i class="mdui-menu-item-icon mdui-icon material-icons">play_arrow</i>运行
+                </a>
+            </li>
+            <li class="mdui-menu-item">
+                <a class="mdui-ripple mdui-ripple-white">
+                    <i class="mdui-menu-item-icon mdui-icon material-icons">pause</i>停止
+                </a>
+            </li>
+            <li class="mdui-menu-item">
+                <a class="mdui-ripple mdui-ripple-white">
+                    <i class="mdui-menu-item-icon mdui-icon material-icons">delete_forever</i>删除
+                </a>
+            </li>
+        </ul>
     </div>
 </header>
 <div class="mdui-list"></div>
@@ -70,6 +86,8 @@
             [$1, $2] = [$2, $1];
             $input.prop('checked', false);
             $usersSelectCount.text(selectCount = 0);
+        } else {
+            $('#users-more').removeClass('mdui-menu-closing');
         }
         $1.addClass('mdui-hidden');
         $2.removeClass('mdui-hidden');
@@ -112,7 +130,7 @@
         }
     }
     const mainAppbar = $('#main-appbar');
-    const selectAppbar = $('#users-select-appbar').on('click', '.mdui-btn', function () {
+    const selectAppbar = $('#users-select-appbar').on('click', '.mdui-btn, .mdui-ripple', function () {
         const text = $(this).children('.mdui-icon').text();
         console.log(text)
         switch (text) {
@@ -124,6 +142,9 @@
                 break;
             case 'delete_forever':
                 break;
+            case '':
+            case 'more_vert':
+                return;
         }
         viewListSelect(true);
     });
