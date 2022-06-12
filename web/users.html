@@ -141,6 +141,20 @@
                 setListRunning(false);
                 break;
             case 'delete_forever':
+                const $users = get$selectParent($list).children('input:checked');
+                for (let e of $users) {
+                    const $item = get$item($(e));
+                    CxIm.apiRequest({
+                        method: 'DELETE',
+                        url: '/api/user',
+                        param: {
+                            username: getUsername($item)
+                        }
+                    }).then(() => {
+                        get$count().text(--usersCount);
+                        $item.remove();
+                    });
+                }
                 break;
             case '':
             case 'more_vert':
