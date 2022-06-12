@@ -41,6 +41,9 @@
     </div>
 </header>
 <div class="mdui-list"></div>
+<button class="mdui-btn mdui-btn-icon mdui-color-theme-accent mdui-ripple mdui-center" id="user-add">
+    <i class="mdui-icon material-icons">add</i>
+</button>
 <script>
 (() => {
     function get$item($e) {
@@ -129,6 +132,23 @@
             }
         }
     }
+    function addUser(username, running) {
+        $list.append(`
+<label class="mdui-list-item mdui-ripple">
+<div class="mdui-list-item-content">
+    <div class="mdui-list-item-title">${username}</div>
+    <div class="mdui-list-item-text">${getStateString(running)}</div>
+</div>
+<div class="mdui-checkbox mdui-hidden list-select">
+    <input type="hidden"/>
+    <i class="mdui-checkbox-icon"></i>
+</div>
+<div class="mdui-switch list-ctrl">
+    <input type="checkbox"${running ? ' checked' : ''}/>
+    <i class="mdui-switch-icon"></i>
+</div>
+</label>`);
+    }
     const mainAppbar = $('#main-appbar');
     const selectAppbar = $('#users-select-appbar').on('click', '.mdui-btn, .mdui-ripple', function () {
         const text = $(this).children('.mdui-icon').text();
@@ -197,26 +217,53 @@
         get$selectParent($item).prop('checked', true);
         viewListSelect();
     });
+    $('#user-add').on('click', () => {
+        mdui.dialog({
+            title: '添加账号',
+            content: `
+<div class="mdui-textfield mdui-textfield-invalid-html5">
+  <input class="mdui-textfield-input" type="text" placeholder="账号" required/>
+</div>
+<div class="mdui-textfield mdui-textfield-invalid-html5">
+  <input class="mdui-textfield-input" type="password" placeholder="密码" required/>
+</div>
+`,
+            buttons: [
+                {
+                    text: '新建',
+                    close: false,
+                    onClick: dialog => {
+                        const $e = dialog.$element;
+                        if ($e.find('.mdui-textfield-invalid-html5').length) {
+                            return;
+                        }
+                        const username = $e.find('input[type=text]').val();
+                        CxIm.apiRequest({
+                            method: 'POST',
+                            url: '/api/user',
+                            param: {
+                                'username': username,
+                            },
+                            data: $e.find('input[type=password]').val(),
+                        }).then(ok => {
+                            if (ok) {
+                                addUser(username);
+                            }
+                        }).always(() => {
+                            dialog.close();
+                        });
+                    }
+                }
+            ],
+            history: false,
+            modal: true,
+        });
+    });
     CxIm.apiRequest('/api/users').then(users => {
         let c = 0;
         for (const user in users) {
             ++c;
-            const running = users[user];
-            $list.append(`
-<label class="mdui-list-item mdui-ripple">
-<div class="mdui-list-item-content">
-    <div class="mdui-list-item-title">${user}</div>
-    <div class="mdui-list-item-text">${getStateString(running)}</div>
-</div>
-<div class="mdui-checkbox mdui-hidden list-select">
-    <input type="hidden"/>
-    <i class="mdui-checkbox-icon"></i>
-</div>
-<div class="mdui-switch list-ctrl">
-    <input type="checkbox"${running ? ' checked' : ''}/>
-    <i class="mdui-switch-icon"></i>
-</div>
-</label>`);
+            addUser(user, users[user])
         }
         get$count().text(usersCount = c);
     });

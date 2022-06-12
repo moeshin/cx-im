@@ -1,3 +1,8 @@
+const MDUI_DIALOG_OPTIONS = {
+    modal: true,
+    history: false,
+};
+function emptyFunc() {}
 function isSwitchClickOnList(e) {
     return e.target.classList.contains('mdui-switch')
         || e.target.parentElement.classList.contains('mdui-switch');
@@ -111,6 +116,27 @@ class CxIm {
             }
             return data.data;
         }
+        mainAlert(msg, '请求失败');
         return Promise.reject(msg);
     }
+}
+
+function getDialogOptions(options, key, val) {
+    let o;
+    if (options) {
+        o = $.extend({}, MDUI_DIALOG_OPTIONS, options);
+    }
+    if (val) {
+        if (!o) {
+            o = $.extend({}, MDUI_DIALOG_OPTIONS);
+        }
+        o[key] = val;
+    }
+    if (!o) {
+        o = MDUI_DIALOG_OPTIONS;
+    }
+    return o;
+}
+function mainAlert(text, title, btn, callback = emptyFunc, options) {
+    return mdui.alert(text, title, callback, getDialogOptions(options, 'confirmText', btn));
 }
