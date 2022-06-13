@@ -77,9 +77,6 @@ func (u *UserDir) GetImageTokenPath() string {
 }
 
 type User struct {
-	Username   string
-	Password   string
-	Fid        string
 	Dir        *UserDir
 	Config     *config.Config
 	Client     *CxClient
@@ -116,19 +113,16 @@ func NewUser(username string) (*User, error) {
 		}
 	}
 	user := &User{
-		Username: config.GodCI(cfg, config.Username, ""),
-		Password: config.GodCI(cfg, config.Password, ""),
-		Fid:      config.GodCI(cfg, config.Fid, ""),
-		Dir:      dir,
-		Config:   cfg,
-		Log:      &LogE{logger},
-		LogFile:  file,
+		Dir:     dir,
+		Config:  cfg,
+		Log:     &LogE{logger},
+		LogFile: file,
 	}
 	user.Client, err = NewClient(user)
 	if err != nil {
 		return nil, err
 	}
-	if !ClientNormalLogin {
+	if !user.Config.New || !ClientNormalLogin {
 		err = user.LoadImageToken()
 		if err != nil {
 			return nil, err
