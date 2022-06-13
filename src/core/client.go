@@ -60,7 +60,7 @@ func NewClient(user *User) (*CxClient, error) {
 			Jar:       jar,
 		},
 	}
-	if !user.Config.New || !ClientNormalLogin {
+	if !user.Config.New && !ClientNormalLogin {
 		if CanFileStat(filename) {
 			user.Log.Println("加载 Cookie 缓存：" + filename)
 			client.Logged = true

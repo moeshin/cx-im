@@ -230,6 +230,9 @@
 `,
             buttons: [
                 {
+                    text: '取消',
+                },
+                {
                     text: '新建',
                     close: false,
                     onClick: dialog => {
@@ -257,6 +260,7 @@
             ],
             history: false,
             modal: true,
+            cssClass: 'mdui-dialog-alert',
         });
     });
     CxIm.apiRequest('/api/users').then(users => {

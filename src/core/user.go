@@ -122,7 +122,7 @@ func NewUser(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !user.Config.New || !ClientNormalLogin {
+	if !user.Config.New && !ClientNormalLogin {
 		err = user.LoadImageToken()
 		if err != nil {
 			return nil, err
