@@ -248,10 +248,8 @@
                                 'username': username,
                             },
                             data: $e.find('input[type=password]').val(),
-                        }).then(ok => {
-                            if (ok) {
-                                addUser(username);
-                            }
+                        }).then(() => {
+                            addUser(username);
                         }).always(() => {
                             dialog.close();
                         });

@@ -13,6 +13,7 @@ import (
 	"github.com/orirawlings/persistent-cookiejar"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -115,6 +116,7 @@ func (c *CxClient) Login() error {
 		)
 	} else {
 		// TODO login by fid
+		log.Panic("TODO")
 	}
 	if err != nil {
 		return err
@@ -128,6 +130,18 @@ func (c *CxClient) Login() error {
 	err = testResponseStatus(resp)
 	if err != nil {
 		return err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var v JsonLogin
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
+	if !v.Status {
+		return errors.New(v.Msg)
 	}
 	c.Fid = c.GetBaseCookieValueI("fid")
 	c.Logged = true

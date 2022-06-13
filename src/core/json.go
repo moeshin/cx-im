@@ -15,6 +15,13 @@ type JsonUpload struct {
 	ObjectId string `json:"objectId"`
 }
 
+type JsonLogin struct {
+	Status bool   `json:"status"`
+	Msg    string `json:"mes"`
+	//Url    string `json:"url"`
+	//Type   int    `json:"type"`
+}
+
 //func JsonUnmarshal(filename string, v any) error {
 //	file, err := os.Open(filename)
 //	if err != nil {
