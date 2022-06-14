@@ -15,6 +15,7 @@ const UsersDir = "users"
 
 type UserDir struct {
 	Path string
+	New  bool
 }
 
 func GetUserDirPath(username string) string {
@@ -47,12 +48,15 @@ func SetDefaultUsername(username string) {
 
 func NewUserDir(username string) (*UserDir, error) {
 	dir := GetUserDirPath(username)
-	err := os.MkdirAll(dir, 0666)
+	_, err := os.Stat(dir)
+	n := err == os.ErrNotExist
+	err = os.MkdirAll(dir, 0666)
 	if err != nil {
 		return nil, err
 	}
 	return &UserDir{
 		Path: dir,
+		New:  n,
 	}, nil
 }
 
@@ -101,11 +105,6 @@ func NewUser(username string) (*User, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer func() {
-			if !_ok {
-				errs.Close(file)
-			}
-		}()
 		logger = NewLogger(file)
 		cfg.User = &config.User{
 			Running: false,
@@ -117,6 +116,14 @@ func NewUser(username string) (*User, error) {
 		Config:  cfg,
 		Log:     &LogE{logger},
 		LogFile: file,
+	}
+	if file != nil {
+		defer func() {
+			if !_ok {
+				errs.Close(file)
+				errs.Print(user.DeleteNew())
+			}
+		}()
 	}
 	user.Client, err = NewClient(user)
 	if err != nil {
@@ -178,6 +185,13 @@ func (u *User) SaveImageToken(client *CxClient) error {
 	return nil
 }
 
+func (u *User) DeleteNew() error {
+	if u.Config.New && u.Dir.New {
+		return os.Remove(u.Dir.Path)
+	}
+	return nil
+}
+
 type users struct {
 	Mutex *sync.RWMutex
 	Map   map[string]*User
@@ -216,6 +230,28 @@ func (u *users) Close() error {
 		errs.Close(user)
 	}
 	return nil
+}
+
+func (u *users) Remove(username string) *User {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	user, ok := u.Map[username]
+	if ok {
+		user.Config.User.Mutex.Lock()
+		user.Config.User.Running = false
+		user.Config.User.Mutex.Unlock()
+		errs.Close(user)
+		delete(u.Map, username)
+	}
+	return user
+}
+
+func (u *users) Delete(username string) error {
+	user := u.Remove(username)
+	if user == nil {
+		return nil
+	}
+	return os.RemoveAll(user.Dir.Path)
 }
 
 func GetUser(username string) (*User, error) {

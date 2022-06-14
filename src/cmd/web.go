@@ -160,18 +160,8 @@ func handleWebApi(w http.ResponseWriter, r *http.Request) {
 					api.Err(err)
 					return
 				case http.MethodDelete:
-					core.Users.Mutex.Lock()
-					user, ok := core.Users.Map[username]
-					if ok {
-						user.Config.User.Mutex.Lock()
-						user.Config.User.Running = false
-						user.Config.User.Mutex.Unlock()
-						errs.Close(user)
-						delete(core.Users.Map, username)
-						api.Ok = true
-						api.Err(os.RemoveAll(user.Dir.Path))
-					}
-					core.Users.Mutex.Unlock()
+					api.Ok = true
+					api.Err(core.Users.Delete(username))
 					return
 				}
 			}

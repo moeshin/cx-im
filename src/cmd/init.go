@@ -41,6 +41,14 @@ func initUser(username string, password string, fid string, def bool) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			if core.Users != nil {
+				core.Users.Remove(username)
+			}
+			errs.Print(user.DeleteNew())
+		}
+	}()
 
 	userConfig := user.Config
 	userConfig.Set(config.Username, username)
